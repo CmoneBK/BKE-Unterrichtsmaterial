@@ -272,6 +272,53 @@ title: "Fertigungstechnik: Messmittel - Kapazitiver Wegsensor"
                 rgba(0, 206, 201, 0.4) 6px
             );
             transition: opacity 0.1s;
+            z-index: 2;
+        }
+
+        /* NEU: Streufelder des Schutzrings */
+        .e-field-guard {
+            position: absolute;
+            width: 20px;
+            height: 100%;
+            border: 2px dashed rgba(149, 165, 166, 0.5);
+            border-top: none;
+            border-bottom: none;
+            z-index: 1;
+            transition: opacity 0.1s;
+        }
+        .e-field-guard.left {
+            left: 10px;
+            border-right: none;
+            border-radius: 0 0 0 20px;
+        }
+        .e-field-guard.right {
+            right: 10px;
+            border-left: none;
+            border-radius: 0 0 20px 0;
+        }
+
+        /* NEU: Visuelle Ölschicht */
+        .oil-layer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, rgba(243, 156, 18, 0.6) 0%, rgba(241, 196, 15, 0.3) 100%);
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+            z-index: 0;
+            border-top: 2px solid rgba(243, 156, 18, 0.8);
+            border-radius: 2px 2px 0 0;
+        }
+        .oil-layer.active {
+            opacity: 1;
+            animation: wave 2s infinite linear;
+        }
+
+        @keyframes wave {
+            0% { border-top-width: 2px; }
+            50% { border-top-width: 4px; }
+            100% { border-top-width: 2px; }
         }
 
         /* Werkstück (unten, beweglich) */
@@ -484,7 +531,10 @@ title: "Fertigungstechnik: Messmittel - Kapazitiver Wegsensor"
 
                 <!-- Messspalt mit E-Feld -->
                 <div class="measurement-gap" id="measurement-gap">
-                    <div class="e-field-lines" id="e-field"></div>
+                    <div class="e-field-guard left" title="Streufeld des Schutzrings"></div>
+                    <div class="e-field-lines" id="e-field" title="Homogenes Messfeld"></div>
+                    <div class="e-field-guard right" title="Streufeld des Schutzrings"></div>
+                    <div class="oil-layer" id="oil-layer"></div>
                 </div>
 
                 <!-- Simuliertes Bauteil/Werkstück -->
@@ -498,7 +548,7 @@ title: "Fertigungstechnik: Messmittel - Kapazitiver Wegsensor"
             <!-- Signal Visualisierung -->
             <div class="signal-panel">
                 <div class="data-row">
-                    <span>Dielektrizitätszahl (<math><msub><mi>ε</mi><mi>r</mi></msub></math>):</span>
+                    <span>Dielektrizitätszahl (<i>&epsilon;<sub>r</sub></i>):</span>
                     <strong id="val-epsilon">1.00 (Luft)</strong>
                 </div>
                 <div class="data-row">
@@ -536,7 +586,7 @@ title: "Fertigungstechnik: Messmittel - Kapazitiver Wegsensor"
                 </label>
                 <div>
                     <strong>Spalt-Verunreinigung (Ölfilm / Emulsion) simulieren</strong><br>
-                    <small id="dielectric-status" style="color: var(--steel-dark);">Luftspalt rein (ε_r ≈ 1.0). Messung ist ideal.</small>
+                    <small id="dielectric-status" style="color: var(--steel-dark);">Luftspalt rein (<i>&epsilon;<sub>r</sub></i> &approx; 1.0). Messung ist ideal.</small>
                 </div>
             </div>
             
@@ -549,9 +599,9 @@ title: "Fertigungstechnik: Messmittel - Kapazitiver Wegsensor"
                 <h3>Prinzip & Auflösung</h3>
                 <ul>
                     <li><strong>Werkzeug:</strong> Kapazitiver Wegsensor</li>
-                    <li><strong>Prinzip:</strong> Plattenkondensator. Der Sensor und das (geerdete) Messobjekt bilden die Elektroden. Die Kapazität $C = \varepsilon_0 \cdot \varepsilon_r \cdot \frac{A}{d}$ ändert sich reziprok ($1/x$) zum Abstand $d$.</li>
+                    <li><strong>Prinzip:</strong> Plattenkondensator. Der Sensor und das (geerdete) Messobjekt bilden die Elektroden. Die Kapazität <i>C = &epsilon;<sub>0</sub> &middot; &epsilon;<sub>r</sub> &middot; (A / d)</i> ändert sich reziprok (1/x) zum Abstand <i>d</i>.</li>
                     <li><strong>Auflösung:</strong> 0,001 mm – 0,00001 mm (1 µm bis 10 nm)</li>
-                    <li><strong>Technik:</strong> Ein Schutzringkondensator (Guard Ring) zwingt die elektrischen Feldlinien der inneren Messelektrode in eine perfekte Parallelität, um Randeffekte zu minimieren. Die Elektronik linearisiert das $1/d$ Signal zu einer propotionalen Ausgangsspannung.</li>
+                    <li><strong>Technik:</strong> Ein Schutzringkondensator (Guard Ring) zwingt die elektrischen Feldlinien der inneren Messelektrode in eine perfekte Parallelität, um Randeffekte zu minimieren. Die Elektronik linearisiert das 1/d Signal zu einer proportionalen Ausgangsspannung.</li>
                 </ul>
             </div>
             <div class="info-card">
@@ -561,7 +611,7 @@ title: "Fertigungstechnik: Messmittel - Kapazitiver Wegsensor"
                 <ul>
                     <li><strong>Vorteil:</strong> Völlig berührungslos und verschleißfrei. Keine Rückwirkung/Kraft auf das Bauteil.</li>
                     <li><strong>Vorteil:</strong> Extrem hohe Auflösung und Bandbreite (dynamische Messungen an rotierenden Wellen).</li>
-                    <li><strong>Nachteil:</strong> Sehr kleiner Arbeitsabstand (meist < 1 mm). Die Messung ist extrem abhängig von der Dielektrizitätskonstante ($\varepsilon_r$) des Spaltmediums. Schmutz, Wasser oder Öl im Spalt verfälschen das Ergebnis massiv!</li>
+                    <li><strong>Nachteil:</strong> Sehr kleiner Arbeitsabstand (meist &lt; 1 mm). Die Messung ist extrem abhängig von der Dielektrizitätskonstante (<i>&epsilon;<sub>r</sub></i>) des Spaltmediums. Schmutz, Wasser oder Öl im Spalt verfälschen das Ergebnis massiv!</li>
                     <li><strong>Einsatzgebiet:</strong> Spindelüberwachung (Rundlauf), Dickenmessung von Folien/Bändern, Positionierung von Linsenstrukturen.</li>
                 </ul>
             </div>
@@ -584,6 +634,8 @@ title: "Fertigungstechnik: Messmittel - Kapazitiver Wegsensor"
         const targetAssembly = document.getElementById('target');
         const measurementGap = document.getElementById('measurement-gap');
         const eField = document.getElementById('e-field');
+        const oilLayer = document.getElementById('oil-layer');
+        const guardFields = document.querySelectorAll('.e-field-guard');
         
         // Signal Data
         const valEpsilon = document.getElementById('val-epsilon');
@@ -646,14 +698,14 @@ title: "Fertigungstechnik: Messmittel - Kapazitiver Wegsensor"
                 dielectricStatus.textContent = "Öl/Emulsion im Spalt (ε_r = 2.2). Kapazität steigt massiv!";
                 dielectricStatus.style.color = "#d35400";
                 explanation.classList.add('error-box');
-                measurementGap.style.backgroundColor = "var(--oil-color)";
+                oilLayer.classList.add('active'); // Visuelles Öl flutet den Spalt
             } else {
                 displayContainer.classList.remove('error-state');
                 errorLabel.style.display = 'none';
                 dielectricStatus.textContent = "Luftspalt rein (ε_r ≈ 1.0). Messung ist ideal.";
                 dielectricStatus.style.color = "var(--steel-dark)";
                 explanation.classList.remove('error-box');
-                measurementGap.style.backgroundColor = "transparent";
+                oilLayer.classList.remove('active');
             }
 
             // --- MECHANIK VISUALISIERUNG ---
@@ -662,21 +714,34 @@ title: "Fertigungstechnik: Messmittel - Kapazitiver Wegsensor"
             measurementGap.style.height = gapHeightPx + 'px';
             targetAssembly.style.top = (SENSOR_BOTTOM_Y + gapHeightPx) + 'px';
 
+            // NEU: Dynamische Feldliniendichte (je näher, desto dichter die Linien)
+            // Abstand skaliert von 2px bis 12px
+            const lineSpacing = 2 + (trueDist / MAX_DIST) * 10;
+            eField.style.background = `repeating-linear-gradient(90deg, transparent, transparent ${lineSpacing}px, rgba(0, 206, 201, 0.6) ${lineSpacing}px, rgba(0, 206, 201, 0.6) ${lineSpacing + 2}px)`;
+
             // E-Feld Opazität anpassen (je näher, desto dichter/stärker)
-            // Normalisiert auf max Distanz
             let fieldStrength = 1 - (trueDist / MAX_DIST);
             eField.style.opacity = 0.3 + (fieldStrength * 0.7);
+            
+            // Schutzring-Felder Opazität (Streufeld)
+            guardFields.forEach(field => {
+                field.style.opacity = 0.2 + (fieldStrength * 0.4);
+                // Je weiter weg, desto bauchiger wird das Streufeld visuell
+                const bulge = 20 + (trueDist / MAX_DIST) * 30;
+                if (field.classList.contains('left')) field.style.borderRadius = `0 0 0 ${bulge}px`;
+                if (field.classList.contains('right')) field.style.borderRadius = `0 0 ${bulge}px 0`;
+            });
 
             // --- ERKLÄRUNGSTEXT BERECHNEN ---
             let explainText = "";
             if (isOilOn) {
                 explainText = `<strong>MESSFEHLER DURCH DIELEKTRIKUM:</strong><br>`;
-                explainText += `Der Sensor misst eine Kapazität von <strong>${capacitance.toFixed(2)} pF</strong>. Da die Elektronik auf Luft ($\varepsilon_r=1$) kalibriert ist, ordnet sie diese extrem hohe Kapazität einem winzigen Abstand von <strong>${measuredDist.toFixed(4)} mm</strong> zu!<br><br>`;
+                explainText += `Der Sensor misst eine Kapazität von <strong>${capacitance.toFixed(2)} pF</strong>. Da die Elektronik auf Luft (<i>&epsilon;<sub>r</sub></i> = 1) kalibriert ist, ordnet sie diese extrem hohe Kapazität einem winzigen Abstand von <strong>${measuredDist.toFixed(4)} mm</strong> zu!<br><br>`;
                 explainText += `<em>Der Messwert ist drastisch verfälscht, obwohl der wahre Abstand ${trueDist.toFixed(4)} mm beträgt.</em>`;
             } else {
                 explainText = `<strong>Funktionsweise:</strong><br>`;
-                explainText += `Die Kapazität ($C = ${capacitance.toFixed(2)} pF$) steigt hyperbelförmig an, je kleiner der Abstand ($d = ${trueDist.toFixed(4)} mm$) wird.<br><br>`;
-                explainText += `Die Sensorelektronik nutzt einen invertierenden Verstärker, um dieses nicht-lineare Signal zu linearisieren, sodass die Ausgangsspannung ($U = ${voltageOut.toFixed(3)} V$) streng proportional zum gemessenen Abstand ist.`;
+                explainText += `Die Kapazität (<i>C</i> = ${capacitance.toFixed(2)} pF) steigt hyperbelförmig an, je kleiner der Abstand (<i>d</i> = ${trueDist.toFixed(4)} mm) wird.<br><br>`;
+                explainText += `Die Sensorelektronik nutzt einen invertierenden Verstärker, um dieses nicht-lineare Signal zu linearisieren, sodass die Ausgangsspannung (<i>U</i> = ${voltageOut.toFixed(3)} V) streng proportional zum gemessenen Abstand ist.`;
             }
             explanation.innerHTML = explainText;
 
@@ -757,6 +822,11 @@ title: "Fertigungstechnik: Messmittel - Kapazitiver Wegsensor"
             ctx.beginPath();
             ctx.arc(ptX, ptY, 5, 0, Math.PI * 2);
             ctx.fill();
+            
+            // NEU: Punkt Beschriftung (Arbeitspunkt)
+            ctx.fillStyle = '#ecf0f1';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillText("Arbeitspunkt", ptX + 8, ptY - 8);
             
             // Text Labels an den Achsen
             ctx.fillStyle = '#ecf0f1';
