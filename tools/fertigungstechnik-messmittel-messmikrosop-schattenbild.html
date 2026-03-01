@@ -1,0 +1,1045 @@
+---
+title: "Fertigungstechnik: Messmittel  - Messmikrosop (Schattenbild)"
+---
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fertigungstechnik: Messmittel  - Messmikrosop (Schattenbild)</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #e74c3c;
+            --highlight: #2980b9;
+            --steel-light: #ecf0f1;
+            --steel-mid: #bdc3c7;
+            --steel-dark: #7f8c8d;
+            --bg-dark: #eef2f5;
+            --backlight: #ccff90; /* Typisches grünes Messlicht */
+            --backlight-glow: rgba(204, 255, 144, 0.4);
+            --shadow-color: #1e272e;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--primary);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 1050px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        h1.main-title {
+            text-align: center;
+            color: var(--primary);
+            margin-top: 0;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+            padding-bottom: 15px;
+            border-bottom: 3px solid var(--primary);
+            letter-spacing: 1px;
+        }
+        .header-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #ecf0f1;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .readout {
+            font-size: 2.5em;
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--highlight);
+            font-weight: bold;
+            background: #eaf2f8;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #d4e6f1;
+            min-width: 250px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: all 0.1s;
+        }
+        .readout.error-state {
+            color: var(--accent);
+            border-color: var(--accent);
+            background: #fdedec;
+            text-shadow: 0 0 5px rgba(231, 76, 60, 0.3);
+        }
+        .readout-true-val {
+            font-size: 0.35em;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        .readout-error-label {
+            font-size: 0.35em;
+            color: var(--accent);
+            margin-top: 5px;
+            font-weight: normal;
+        }
+        .settings-row {
+            display: flex;
+            gap: 15px;
+            flex-grow: 1;
+        }
+        .settings {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            flex: 1;
+        }
+        select {
+            padding: 10px;
+            font-size: 1em;
+            border-radius: 6px;
+            border: 1px solid var(--steel-mid);
+            background: var(--steel-light);
+            cursor: pointer;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        /* --- SENSOR GRAFIK --- */
+        .sensor-viewport {
+            position: relative;
+            width: 100%;
+            height: 480px; 
+            background: #ffffff;
+            border: 2px solid var(--steel-mid);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: inset 0 5px 15px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            background-image: 
+                linear-gradient(rgba(189, 195, 199, 0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(189, 195, 199, 0.2) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        /* Mechanik (Links) */
+        .mechanics-system {
+            position: relative;
+            width: 350px;
+            height: 100%;
+            border-right: 1px dashed var(--steel-mid);
+            flex-shrink: 0;
+            background: rgba(255,255,255,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Lichtquelle (Unten) */
+        .light-source-base {
+            position: absolute;
+            bottom: 20px;
+            width: 200px;
+            height: 60px;
+            background: linear-gradient(to top, #34495e, #7f8c8d);
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .light-panel {
+            width: 160px;
+            height: 10px;
+            background: var(--backlight);
+            border: 1px solid #7bed9f;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            box-shadow: 0 -5px 15px var(--backlight-glow);
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .base-label {
+            position: absolute;
+            bottom: 10px;
+            font-weight: bold;
+            font-size: 0.8em;
+            color: #fff;
+        }
+
+        /* Glastisch (Mitte) */
+        .glass-stage {
+            position: absolute;
+            top: 260px;
+            left: 45px; 
+            width: 260px;
+            height: 8px;
+            background: rgba(104, 160, 176, 0.3);
+            border: 1px solid rgba(104, 160, 176, 0.6);
+            border-radius: 4px;
+            z-index: 15;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        /* Das Werkstück auf dem Glastisch (Stufenwelle horizontal - REALISTISCH KLEIN) */
+        .workpiece {
+            position: absolute;
+            bottom: 8px; 
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: row; 
+            align-items: center;
+            z-index: 16;
+            width: 40px; /* Sehr kleine visuelle Repräsentation! */
+            /* Height wird durch JS gesteuert, aber extrem herunterskaliert */
+        }
+        .wp-top {
+            width: 25%; height: 70%;
+            background: linear-gradient(to bottom, #95a5a6, #34495e);
+            border-radius: 1px 0 0 1px; border: 1px solid #2c3e50; border-right: none;
+        }
+        .wp-middle {
+            width: 55%; height: 100%;
+            background: linear-gradient(to bottom, #bdc3c7, #2c3e50);
+            border: 1px solid #2c3e50; border-left: none; border-right: none;
+        }
+        .wp-bottom {
+            width: 20%; height: 130%;
+            background: linear-gradient(to bottom, #7f8c8d, #1e272e);
+            border-radius: 0 1px 1px 0; border: 1px solid #2c3e50;
+        }
+        
+        .dirt-particle {
+            position: absolute;
+            bottom: 8px; 
+            left: 140px; /* Näher am winzigen Werkstück */
+            width: 4px; /* Auch der Schmutz muss winzig sein */
+            height: 3px;
+            background: rgba(50, 50, 50, 0.9);
+            border-radius: 40% 60% 70% 30%;
+            z-index: 17;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        /* Mikroskop-Optik (Oben, beweglich für Fokus) */
+        .optic-assembly {
+            position: absolute;
+            top: 80px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 20;
+            transition: top 0.1s linear;
+        }
+        .optic-tube {
+            width: 60px; /* Etwas schlanker gemacht */
+            height: 100px;
+            background: linear-gradient(to right, #95a5a6, #ecf0f1, #95a5a6);
+            border: 2px solid var(--primary);
+            border-bottom: none;
+            display: flex;
+            justify-content: center;
+        }
+        .optic-lens {
+            width: 45px;
+            height: 15px;
+            background: linear-gradient(to right, #34495e, #2c3e50);
+            border: 2px solid var(--primary);
+            border-radius: 0 0 8px 8px;
+        }
+        .optic-lens::after {
+            content: '';
+            display: block;
+            margin: 0 auto;
+            width: 25px;
+            height: 6px;
+            background: rgba(104, 160, 176, 0.6);
+            border-radius: 0 0 10px 10px;
+        }
+        .optic-label {
+            margin-top: -80px;
+            font-weight: bold;
+            font-size: 0.8em;
+            color: var(--primary);
+            text-align: center;
+            z-index: 25;
+        }
+
+        /* SVG für Lichtstrahlen (Kegel zum winzigen Objektiv) */
+        .optics-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* Signal Visualizer (Rechts - Kamera Feed) */
+        .signal-panel {
+            width: calc(100% - 370px);
+            margin: 15px;
+            background: var(--bg-dark);
+            border: 1px solid var(--steel-mid);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 10;
+            box-sizing: border-box;
+        }
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9em; /* Etwas kleiner für mehr Reihen */
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding-bottom: 5px;
+        }
+        .data-row strong {
+            color: var(--primary);
+        }
+
+        /* Kamera Livebild */
+        .camera-box {
+            margin-top: 5px;
+            background: #2c3e50;
+            border-radius: 6px;
+            padding: 10px;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .camera-title {
+            color: #ecf0f1;
+            font-size: 0.85em;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .camera-status {
+            font-weight: bold;
+            color: #2ed573;
+        }
+        .camera-box canvas {
+            width: 100%;
+            height: 100%;
+            min-height: 180px;
+            background: #000; /* Wird vom ctx.fillRect überschrieben */
+            border-radius: 4px;
+            display: block;
+            border: 2px solid #1a252f;
+            box-sizing: border-box;
+        }
+
+        /* --- STEUERUNG --- */
+        .controls {
+            margin-top: 25px;
+            padding: 20px;
+            background: var(--steel-light);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .slider-group label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+        }
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            height: 8px;
+            background: var(--steel-mid);
+            border-radius: 4px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--highlight);
+            cursor: pointer;
+        }
+        #focus-slider::-webkit-slider-thumb { background: #9b59b6; }
+        #light-slider::-webkit-slider-thumb { background: #f1c40f; }
+        
+        .toggle-group-row {
+            display: flex;
+            gap: 15px;
+        }
+        @media (max-width: 768px) {
+            .toggle-group-row { flex-direction: column; }
+            .settings-row { flex-direction: column; }
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--steel-mid);
+            flex: 1;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            flex-shrink: 0;
+        }
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider-toggle {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--steel-dark);
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider-toggle:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        #dirt-toggle:checked + .slider-toggle { background-color: #8395a7; }
+        #dirt-toggle:checked + .slider-toggle:before { transform: translateX(26px); }
+
+        .explanation {
+            background: white;
+            padding: 15px;
+            border-left: 5px solid var(--highlight);
+            border-radius: 4px;
+            font-size: 1.05em;
+            line-height: 1.5;
+        }
+        .explanation.error-box {
+            border-left-color: var(--accent);
+            background: #fdedec;
+        }
+
+        /* --- THEORIE GRID --- */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .info-card {
+            background: #ffffff;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .info-card h3 {
+            margin-top: 0;
+            color: #2980b9;
+            font-size: 1.2em;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+        .info-card ul {
+            padding-left: 20px;
+            margin-bottom: 0;
+        }
+        .info-card li {
+            margin-bottom: 8px;
+        }
+        .badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .badge.warning { background: var(--accent); }
+        .badge.success { background: var(--highlight); }
+        .badge.optical-micro { background: #00cec9; color: #2d3436; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1 class="main-title">Messmittel  - Messmikrosop (Schattenbild)</h1>
+        
+        <div class="header-panel">
+            <div class="settings-row">
+                <div class="settings">
+                    <label for="resolution-select"><strong>Software-Auflösung:</strong></label>
+                    <select id="resolution-select">
+                        <option value="0.001">1 µm (0,001 mm) - Standard</option>
+                        <option value="0.0005">0,5 µm (0,0005 mm) - Fein</option>
+                    </select>
+                </div>
+                <div class="settings">
+                    <label for="mag-select"><strong>Objektiv-Vergrößerung:</strong></label>
+                    <select id="mag-select">
+                        <option value="10">10x (Sichtfeld: 10 mm)</option>
+                        <option value="20">20x (Sichtfeld: 5 mm)</option>
+                        <option value="50">50x (Sichtfeld: 2 mm)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="readout" id="measurement-display">
+                <span class="readout-true-val" id="true-val-label">Wahrer Durchmesser: 2.500 mm</span>
+                <span id="main-readout-val">2.500 mm</span>
+                <span class="readout-error-label" id="error-label" style="display:none;">(Fokus verloren! Kantenerkennung ungenau)</span>
+            </div>
+        </div>
+
+        <div class="sensor-viewport" id="scale-viewport">
+            
+            <!-- Mechanische System Darstellung -->
+            <div class="mechanics-system">
+                
+                <!-- SVG für Lichtstrahlen -->
+                <svg class="optics-svg" id="optics-svg">
+                    <!-- Hintergrundlicht (Kondensor nach oben) -->
+                    <rect x="95" y="180" width="160" height="240" fill="var(--backlight-glow)" id="svg-backlight" />
+                    <!-- Lichtkegel der in das Objektiv fällt -->
+                    <polygon points="120,260 230,260 190,100 160,100" fill="var(--backlight-glow)" id="svg-cone" />
+                </svg>
+
+                <!-- Mikroskop Optik (Beweglich für Fokus) -->
+                <div class="optic-assembly" id="optic-assembly">
+                    <div class="optic-tube"></div>
+                    <div class="optic-lens" title="Telezentrisches Messobjektiv"></div>
+                    <div class="optic-label">Messobjektiv</div>
+                </div>
+
+                <!-- Glastisch und winziges Objekt -->
+                <div class="glass-stage" title="Gläserner Messtisch">
+                    <div class="workpiece" id="workpiece" title="Winziges Messobjekt">
+                        <div class="wp-top"></div>
+                        <div class="wp-middle"></div>
+                        <div class="wp-bottom"></div>
+                    </div>
+                    <div class="dirt-particle" id="dirt-element" title="Staubkorn auf dem Glastisch"></div>
+                </div>
+
+                <!-- Lichtquelle -->
+                <div class="light-source-base">
+                    <div class="light-panel" id="html-light-panel" title="Durchlicht"></div>
+                    <div class="base-label">LED-Durchlicht</div>
+                </div>
+            </div>
+
+            <!-- Signal Visualisierung (Kamera Bild) -->
+            <div class="signal-panel">
+                <div class="data-row">
+                    <span>Beleuchtung:</span>
+                    <strong id="val-light-status" style="color: #f1c40f">Optimal (50%)</strong>
+                </div>
+                <div class="data-row">
+                    <span>Fokus (Z-Achse):</span>
+                    <strong id="val-focus" style="color: #9b59b6">Perfekt zentriert</strong>
+                </div>
+                <div class="data-row">
+                    <span>Kantendetektion:</span>
+                    <strong id="val-edge-status" style="color: var(--highlight)">Scharf - Zuverlässig</strong>
+                </div>
+                
+                <!-- Kamera Livebild -->
+                <div class="camera-box" title="Livebild der CCD-Kamera">
+                    <div class="camera-title">
+                        <span>Kamera Livebild (Softwareauswertung)</span>
+                        <span class="camera-status" id="camera-status">OK</span>
+                    </div>
+                    <!-- Canvas rendert das Schattenbild -->
+                    <canvas id="camera-canvas"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="controls">
+            <div class="slider-group">
+                <label for="width-slider">
+                    <strong>Wahrer Durchmesser der mittleren Stufe:</strong>
+                    <span id="width-val-text">2.500 mm</span>
+                </label>
+                <input type="range" id="width-slider" min="0.5" max="9.5" step="0.001" value="2.500">
+            </div>
+
+            <div class="slider-group">
+                <label for="focus-slider">
+                    <strong>Fokus-Einstellung (Z-Achse Objektiv):</strong>
+                    <span id="focus-val-text">0.0 mm</span>
+                </label>
+                <input type="range" id="focus-slider" min="-2" max="2" step="0.05" value="0">
+            </div>
+
+            <div class="slider-group">
+                <label for="light-slider">
+                    <strong>Helligkeit der LED-Beleuchtung (0 - 100%):</strong>
+                    <span id="light-val-text">50%</span>
+                </label>
+                <input type="range" id="light-slider" min="0" max="100" step="1" value="50">
+            </div>
+
+            <div class="toggle-group-row">
+                <div class="toggle-container">
+                    <label class="switch">
+                        <input type="checkbox" id="dirt-toggle">
+                        <span class="slider-toggle"></span>
+                    </label>
+                    <div>
+                        <strong>Glastisch verschmutzen</strong><br>
+                        <small id="dirt-status" style="color: var(--steel-dark);">Glastisch ist sauber.</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="explanation" id="dynamic-explanation"></div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-card">
+                <span class="badge optical-micro">OPTISCH (Durchlichtverfahren)</span>
+                <h3>Prinzip & Technik</h3>
+                <ul>
+                    <li><strong>Skalierung:</strong> Achte auf das Werkstück im linken Bild! Mikroskope messen winzigste Bauteile. Das Kamera-Bild vergrößert diesen winzigen Schatten digital.</li>
+                    <li><strong>Sichtfeld (FOV):</strong> Je stärker die Vergrößerung des Objektivs (z.B. 50x), desto kleiner der Bildausschnitt. Passt das Objekt nicht mehr ins Sichtfeld, kann es nicht als Ganzes gemessen werden.</li>
+                    <li><strong>Beleuchtung:</strong> Die Lichtintensität ist kritisch! Ist das Licht zu hell, "überstrahlt" es die Kante (Objekt wirkt dünner). Ist es zu dunkel, blutet der Schatten aus (Objekt wirkt dicker).</li>
+                </ul>
+            </div>
+            <div class="info-card">
+                <span class="badge success">VORTEILE</span>
+                <span class="badge warning">NACHTEILE</span>
+                <h3>Eigenschaften & Einsatz</h3>
+                <ul>
+                    <li><strong>Vorteil:</strong> Höchste Präzision ohne mechanische Verformung winziger Bauteile. Bildet beliebig viele Messkanten gleichzeitig ab (2D).</li>
+                    <li><strong>Nachteil:</strong> Begrenztes Sichtfeld (FOV). Die Tiefenschärfe ist physikalisch extrem gering; ist das Bild minimal unscharf, verwischt die Kante und die Software misst fehlerhaft.</li>
+                    <li><strong>Einsatzgebiet:</strong> Kleinstteile (Uhrenindustrie, Medizintechnik), Gewindeprüfung, Platinen/Leiterplatten, Stanzteile.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM ELEMENTE ---
+        const widthSlider = document.getElementById('width-slider');
+        const focusSlider = document.getElementById('focus-slider');
+        const lightSlider = document.getElementById('light-slider');
+        const dirtToggle = document.getElementById('dirt-toggle');
+        const resolutionSelect = document.getElementById('resolution-select');
+        const magSelect = document.getElementById('mag-select');
+        
+        const displayContainer = document.getElementById('measurement-display');
+        const trueValLabel = document.getElementById('true-val-label');
+        const mainReadoutVal = document.getElementById('main-readout-val');
+        const errorLabel = document.getElementById('error-label');
+        
+        const dirtStatus = document.getElementById('dirt-status');
+        const explanation = document.getElementById('dynamic-explanation');
+        const widthValText = document.getElementById('width-val-text');
+        const focusValText = document.getElementById('focus-val-text');
+        const lightValText = document.getElementById('light-val-text');
+        
+        const valFocus = document.getElementById('val-focus');
+        const valEdgeStatus = document.getElementById('val-edge-status');
+        const valLightStatus = document.getElementById('val-light-status');
+        const cameraStatus = document.getElementById('camera-status');
+        
+        // Mechanik Visuals
+        const workpiece = document.getElementById('workpiece');
+        const opticAssembly = document.getElementById('optic-assembly');
+        const dirtElement = document.getElementById('dirt-element');
+        const svgBacklight = document.getElementById('svg-backlight');
+        const svgCone = document.getElementById('svg-cone');
+        const htmlLightPanel = document.getElementById('html-light-panel');
+        
+        // Canvas Setup
+        const canvas = document.getElementById('camera-canvas');
+        const ctx = canvas.getContext('2d');
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth - 24; 
+            canvas.height = canvas.parentElement.clientHeight - 35; 
+        }
+        window.addEventListener('resize', resizeCanvas);
+        setTimeout(resizeCanvas, 10);
+
+        // --- KONSTANTEN ---
+        let currentRes = 0.001;
+        const BASE_OPTIC_TOP = 80; 
+        
+        // NEU: Realistische Skalierung für das mechanische Bild (Links).
+        // Ein 5mm Bauteil ist nun nur noch 20px hoch (extrem klein auf dem Tisch!)
+        const MECH_PX_PER_MM = 4; 
+
+        // --- HAUPT UPDATE FUNKTION ---
+        function calculateAndRender() {
+            let trueWidth = parseFloat(widthSlider.value);
+            let focusZ = parseFloat(focusSlider.value);
+            let lightIntensity = parseFloat(lightSlider.value);
+            let isDirtOn = dirtToggle.checked;
+            
+            // Sichtfeld (FOV) basierend auf dem gewählten Objektiv
+            // 10x -> 10mm, 20x -> 5mm, 50x -> 2mm
+            let fovMm = 100 / parseFloat(magSelect.value); 
+            
+            // Text Updates
+            widthValText.textContent = trueWidth.toFixed(3) + " mm";
+            focusValText.textContent = (focusZ > 0 ? "+" : "") + focusZ.toFixed(2) + " mm";
+            lightValText.textContent = lightIntensity + "%";
+            
+            // 1. PHYSIK DER BILDVERARBEITUNG
+            
+            // Fokus/Unschärfe Fehler
+            let blurAmount = Math.abs(focusZ); 
+            let focusError = 0;
+            if (blurAmount > 0.3) {
+                focusError = Math.pow(blurAmount, 2) * 0.015; 
+            }
+            
+            // Beleuchtungs-Fehler (Über-/Unterbelichtung)
+            // Ideal ist 50%. 
+            // 100% (Überstrahlt) -> Schatten schrumpft -> Messwert wird kleiner
+            // 0% (Dunkel) -> Schatten franst aus -> Messwert wird größer
+            let lightError = (50 - lightIntensity) * 0.002; 
+            
+            // Schmutz-Fehler (im mechanischen Bild fixiert, wir prüfen ob er ins FOV/Messbereich fällt)
+            // Schmutz liegt leicht rechts neben der Mitte.
+            let dirtError = 0;
+            if (isDirtOn) {
+                // Skaliert mit FOV: Wenn Objekt fast den FOV füllt, erwischt es den Schmutz
+                if (trueWidth > (fovMm * 0.6)) {
+                    dirtError = 0.5 * (10 / parseFloat(magSelect.value)); // Schmutz wirkt bei starker Vergrößerung noch größer
+                }
+            }
+
+            // Gesamtberechnung
+            let measuredWidth = trueWidth + focusError + lightError + dirtError;
+            
+            // Out of Bounds Prüfung (Passt das Objekt noch aufs Bild?)
+            // Bei einem 50x Objektiv (2mm FOV) kann man kein 3mm Bauteil komplett messen!
+            let outOfBounds = trueWidth > (fovMm * 0.95);
+
+            // Runden auf Sensor-Auflösung
+            let displayRead = Math.round(measuredWidth / currentRes) * currentRes;
+            let displayTrue = Math.round(trueWidth / currentRes) * currentRes;
+            const decimals = currentRes === 0.0005 ? 4 : 3; 
+
+            // UI Updates - Werte
+            trueValLabel.textContent = `Wahrer Durchmesser: ${displayTrue.toFixed(decimals)} mm`;
+            
+            // Fokus Status Text
+            if (blurAmount <= 0.1) {
+                valFocus.textContent = "Perfekt zentriert"; valFocus.style.color = "#27ae60";
+            } else if (blurAmount <= 0.5) {
+                valFocus.textContent = "Leicht defokussiert"; valFocus.style.color = "#f39c12";
+            } else {
+                valFocus.textContent = "Stark unscharf!"; valFocus.style.color = "var(--accent)";
+            }
+
+            // Beleuchtungs Status
+            if (lightIntensity > 35 && lightIntensity < 65) {
+                valLightStatus.textContent = "Optimal (" + lightIntensity + "%)";
+                valLightStatus.style.color = "#27ae60";
+            } else if (lightIntensity >= 65) {
+                valLightStatus.textContent = "Überbelichtet (Überstrahlt)";
+                valLightStatus.style.color = "var(--accent)";
+            } else {
+                valLightStatus.textContent = "Unterbelichtet (Schatten)";
+                valLightStatus.style.color = "#f39c12";
+            }
+
+            // Fehler-State ermitteln
+            let isErrorState = blurAmount > 0.5 || (isDirtOn && dirtError > 0) || Math.abs(lightIntensity - 50) > 20 || outOfBounds;
+
+            if (outOfBounds) {
+                mainReadoutVal.textContent = "---.--- mm";
+                displayContainer.classList.add('error-state');
+                errorLabel.style.display = 'block';
+                cameraStatus.textContent = "OUT OF FOV";
+                cameraStatus.style.color = "var(--accent)";
+                explanation.classList.add('error-box');
+                errorLabel.textContent = "(Bauteil größer als Sichtfeld!)";
+                valEdgeStatus.textContent = "Kanten außerhalb Bild";
+                valEdgeStatus.style.color = "var(--accent)";
+            }
+            else if (isErrorState) {
+                mainReadoutVal.textContent = displayRead.toFixed(decimals) + " mm";
+                displayContainer.classList.add('error-state');
+                errorLabel.style.display = 'block';
+                cameraStatus.textContent = "WARNUNG";
+                cameraStatus.style.color = "var(--accent)";
+                explanation.classList.add('error-box');
+                valEdgeStatus.textContent = "Messwert verfälscht";
+                valEdgeStatus.style.color = "var(--accent)";
+                
+                if(dirtError > 0) errorLabel.textContent = "(Fremdschatten im Auswertebereich!)";
+                else if(blurAmount > 0.5) errorLabel.textContent = "(Fokus verloren! Halbschatten)";
+                else errorLabel.textContent = "(Falsche Beleuchtung! Maß wandert)";
+            } else {
+                mainReadoutVal.textContent = displayRead.toFixed(decimals) + " mm";
+                displayContainer.classList.remove('error-state');
+                errorLabel.style.display = 'none';
+                cameraStatus.textContent = "OK";
+                cameraStatus.style.color = "#2ed573";
+                explanation.classList.remove('error-box');
+                valEdgeStatus.textContent = "Scharf - Zuverlässig";
+                valEdgeStatus.style.color = "var(--highlight)";
+            }
+
+            // Schmutz Status Text
+            if (isDirtOn) {
+                dirtElement.style.opacity = '1';
+                if (dirtError > 0) {
+                    dirtStatus.textContent = "Schmutz überlagert die Messkante! Messung verfälscht.";
+                    dirtStatus.style.color = "var(--accent)";
+                } else {
+                    dirtStatus.textContent = "Schmutz auf Tisch, stört aber aktuell nicht.";
+                    dirtStatus.style.color = "#f39c12";
+                }
+            } else {
+                dirtElement.style.opacity = '0';
+                dirtStatus.textContent = "Glastisch ist sauber.";
+                dirtStatus.style.color = "var(--steel-dark)";
+            }
+
+            // --- MECHANIK VISUALISIERUNG ---
+            // Werkstück in der linken Grafik ist jetzt winzig! 
+            workpiece.style.height = (trueWidth * MECH_PX_PER_MM) + 'px';
+            
+            // Optik Z-Achse verfahren
+            const moveY = focusZ * 15;
+            opticAssembly.style.top = (BASE_OPTIC_TOP - moveY) + 'px';
+
+            // Licht dimmen in der Grafik
+            const lightAlpha = lightIntensity / 100;
+            const glowColor = `rgba(204, 255, 144, ${lightAlpha * 0.8})`;
+            svgBacklight.setAttribute('fill', glowColor);
+            svgCone.setAttribute('fill', glowColor);
+            htmlLightPanel.style.boxShadow = `0 -5px 15px ${glowColor}`;
+
+            // --- ERKLÄRUNGSTEXT ---
+            let explainText = "";
+            if (outOfBounds) {
+                explainText = `<strong>KRITISCHER FEHLER: FALSCHES OBJEKTIV (Sichtfeld)</strong><br>`;
+                explainText += `Das Bauteil (&Oslash; ${trueWidth.toFixed(2)} mm) ist schlichtweg zu groß für das aktuell gewählte Objektiv (${magSelect.options[magSelect.selectedIndex].text})!<br><br>`;
+                explainText += `Die Kamera kann die Außenkanten nicht mehr sehen. <em>Lösung: Wähle oben im Dropdown eine geringere Vergrößerung (z.B. 10x).</em>`;
+            } else if (Math.abs(lightIntensity - 50) > 20) {
+                explainText = `<strong>MESSFEHLER: BELEUCHTUNGSINTENSITÄT</strong><br>`;
+                if(lightIntensity > 50) {
+                    explainText += `Das Durchlicht ist viel zu grell. Das Licht "überstrahlt" und kriecht optisch über die Ränder des Bauteils hinaus. Der Schatten zieht sich zusammen.<br><strong>Folge: Das Objekt wird zu klein gemessen!</strong>`;
+                } else {
+                    explainText = `Das Durchlicht ist zu schwach. Der Übergang von Hell zu Dunkel wird für die Kamera breiig und der Schatten "blutet" aus.<br><strong>Folge: Das Objekt wird zu groß gemessen!</strong>`;
+                }
+            } else if (blurAmount > 0.5) {
+                explainText = `<strong>MESSFEHLER: TIEFENSCHÄRFE VERLOREN</strong><br>`;
+                explainText += `Die Linse wurde verstellt. Das mikroskopische Bauteil liegt nicht mehr in der extrem schmalen Fokusebene.<br><br>`;
+                explainText += `Der Schatten wirft einen diffusen Halbschatten. Die Algorithmen der Bildverarbeitung raten nur noch, wo das Objekt aufhört.`;
+            } else if (dirtError > 0) {
+                explainText = `<strong>MESSFEHLER: SCHMUTZ AUF DER GLASPLATTE</strong><br>`;
+                explainText += `Ein winziger Schmutzpartikel wirft einen Schatten genau in das Messfenster. Da eine Kamera nur hell/dunkel unterscheidet, hält die Software den Schmutz für einen Teil des Werkstücks.`;
+            } else {
+                explainText = `<strong>Funktionsweise (Schattenbild & Vergrößerung):</strong><br>`;
+                explainText += `Schau auf das linke Bild: Das Bauteil auf dem Glastisch ist winzig! Die Linse vergrößert es massiv auf den Kamera-Chip.<br><br>`;
+                explainText += `Dank optimaler Beleuchtung (50%) und perfektem Fokus liefert das Durchlicht einen gestochen scharfen Schatten. Die Software sucht in der roten Box (ROI) den Helligkeitsabfall und berechnet daraus den Durchmesser.`;
+            }
+            explanation.innerHTML = explainText;
+
+            // Trigger Canvas Render
+            requestAnimationFrame(() => drawCameraCanvas(trueWidth, fovMm, blurAmount, lightIntensity, isDirtOn, measuredWidth, isErrorState, outOfBounds));
+        }
+
+        // --- CAMERA CANVAS RENDERER ---
+        function drawCameraCanvas(trueWidthMm, fovMm, blurVal, lightInt, hasDirt, measuredWidthMm, isError, outOfBounds) {
+            if(!canvas.width || canvas.width < 50) resizeCanvas();
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            
+            // Map the Field of View (FOV) to the canvas height
+            // If FOV is 5mm, then 5mm takes up 100% of the canvas height.
+            const pxPerMm = h / fovMm;
+            const objDiamPx = trueWidthMm * pxPerMm;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // 1. Hintergrund zeichnen (Backlight Helligkeit simulieren)
+            // 50% = normal green. 100% = almost white. 0% = dark green/black
+            const l = (lightInt / 100);
+            // HSL: Hue 80 (yellow-green), Saturation 100%, Lightness based on slider
+            ctx.fillStyle = `hsl(80, 100%, ${l * 80}%)`;
+            ctx.fillRect(0, 0, w, h);
+
+            // 2. Schattenbild zeichnen
+            ctx.save();
+            
+            // Blur berechnen
+            let canvasBlur = blurVal * 7.5;
+            ctx.filter = `blur(${canvasBlur}px)`;
+            
+            // Schattentönung (wird nie ganz schwarz, außer bei 0% Licht)
+            ctx.fillStyle = `rgba(30, 39, 46, ${0.8 + (1-l)*0.2})`; 
+            
+            // Objektgeometrie
+            const midWidth = w * 0.45;
+            // Wenn das Licht blendet (100%), schrumpft die visuelle Form minimal (Überstrahlung)
+            // Wenn zu dunkel (0%), wächst die Form (Ausbluten)
+            const exposureOffsetPx = (50 - lightInt) * 0.15; 
+            const drawDiamPx = objDiamPx + exposureOffsetPx;
+
+            const midHeight = drawDiamPx;
+            const midX = cx - midWidth/2;
+            const midY = cy - midHeight/2;
+            
+            const leftWidth = w * 0.25;
+            const leftHeight = drawDiamPx * 0.7;
+            const leftX = midX - leftWidth;
+            const leftY = cy - leftHeight/2;
+            
+            const rightWidth = w * 0.15;
+            const rightHeight = drawDiamPx * 1.3;
+            const rightX = midX + midWidth;
+            const rightY = cy - rightHeight/2;
+
+            // Die 3 Stufen
+            ctx.fillRect(leftX, leftY, leftWidth, leftHeight);    
+            ctx.fillRect(midX, midY, midWidth, midHeight);        
+            ctx.fillRect(rightX, rightY, rightWidth, rightHeight); 
+
+            // Schmutz zeichnen
+            if (hasDirt) {
+                // Schmutz relativ zum FOV skalieren (damit er bei 50x riesig aussieht)
+                const dirtSize = (10 / fovMm) * 8; // Basisgröße 8px bei 10mm FOV
+                const dirtX = cx + (midWidth * 0.3);
+                // Platziert am Rand des Sichtfeldes
+                const dirtY = cy + (h * 0.3); 
+                
+                ctx.beginPath();
+                ctx.arc(dirtX, dirtY, dirtSize, 0, Math.PI*2);
+                ctx.arc(dirtX + (dirtSize/2), dirtY - (dirtSize*0.6), dirtSize*0.6, 0, Math.PI*2);
+                ctx.fill();
+            }
+
+            ctx.restore(); // Filter entfernen!
+
+            // 3. Software Overlays (Fadenkreuz, ROI, Messergebnis)
+            // Region of Interest (ROI)
+            const roiWidth = 40;
+            const roiLeft = cx - roiWidth/2;
+            const roiHeight = h * 0.9;
+            const roiTop = cy - roiHeight/2;
+            
+            ctx.strokeStyle = 'rgba(231, 76, 60, 0.5)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            ctx.strokeRect(roiLeft, roiTop, roiWidth, roiHeight);
+            ctx.setLineDash([]);
+            
+            ctx.fillStyle = 'rgba(231, 76, 60, 0.8)';
+            ctx.font = '10px sans-serif';
+            ctx.fillText("ROI", roiLeft + roiWidth + 5, roiTop + 10);
+
+            // Wenn Out of Bounds, zeichnen wir keine Kanten, da die Software sie nicht findet
+            if (!outOfBounds) {
+                // Erfasste Kanten
+                const measDiamPx = measuredWidthMm * pxPerMm;
+                const topEdge = cy - (measDiamPx/2);
+                
+                let bottomEdge = cy + (measDiamPx/2);
+                // Optischer Versatz bei Schmutzfehler (wenn es den Messwert verfälscht hat)
+                if(hasDirt && measuredWidthMm > trueWidthMm + 0.1) {
+                    bottomEdge += (measuredWidthMm - trueWidthMm) * pxPerMm;
+                }
+
+                ctx.strokeStyle = isError ? '#e74c3c' : '#27ae60';
+                ctx.lineWidth = 2;
+                
+                // Obere Kante
+                ctx.beginPath(); ctx.moveTo(roiLeft - 15, topEdge); ctx.lineTo(roiLeft + roiWidth + 15, topEdge); ctx.stroke();
+                // Untere Kante
+                ctx.beginPath(); ctx.moveTo(roiLeft - 15, bottomEdge); ctx.lineTo(roiLeft + roiWidth + 15, bottomEdge); ctx.stroke();
+
+                // Maßpfeil dazwischen
+                ctx.beginPath(); ctx.moveTo(cx, topEdge); ctx.lineTo(cx, bottomEdge); ctx.stroke();
+                
+                // Pfeilspitzen
+                ctx.fillStyle = isError ? '#e74c3c' : '#27ae60';
+                ctx.beginPath(); ctx.moveTo(cx, topEdge); ctx.lineTo(cx - 4, topEdge + 6); ctx.lineTo(cx + 4, topEdge + 6); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(cx, bottomEdge); ctx.lineTo(cx - 4, bottomEdge - 6); ctx.lineTo(cx + 4, bottomEdge - 6); ctx.fill();
+
+                // Gemessener Text im Bild
+                ctx.font = 'bold 13px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(measuredWidthMm.toFixed(3) + " mm", cx + 8, cy + 4);
+            }
+
+            // Fadenkreuz
+            ctx.strokeStyle = 'rgba(44, 62, 80, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, h); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(w, cy); ctx.stroke();
+        }
+
+        // --- EVENT LISTENERS ---
+        widthSlider.addEventListener('input', calculateAndRender);
+        focusSlider.addEventListener('input', calculateAndRender);
+        lightSlider.addEventListener('input', calculateAndRender);
+        dirtToggle.addEventListener('change', calculateAndRender);
+        magSelect.addEventListener('change', calculateAndRender);
+        
+        resolutionSelect.addEventListener('change', (e) => {
+            currentRes = parseFloat(e.target.value);
+            widthSlider.step = currentRes === 0.0005 ? 0.0005 : 0.001;
+            calculateAndRender();
+        });
+
+        // Initialisierung
+        calculateAndRender();
+
+    </script>
+</body>
+</html>
