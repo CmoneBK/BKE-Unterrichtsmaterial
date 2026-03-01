@@ -1,0 +1,949 @@
+---
+title: "Fertigungstechnik: Messmittel - Laser Triangulation"
+---
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fertigungstechnik: Messmittel - Laser Triangulation</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #e74c3c;
+            --highlight: #2980b9;
+            --steel-light: #ecf0f1;
+            --steel-mid: #bdc3c7;
+            --steel-dark: #7f8c8d;
+            --bg-dark: #eef2f5;
+            --laser-color: #ff4757;
+            --laser-glow: rgba(255, 71, 87, 0.4);
+            --ccd-color: #2ed573;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--primary);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 1050px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        h1.main-title {
+            text-align: center;
+            color: var(--primary);
+            margin-top: 0;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+            padding-bottom: 15px;
+            border-bottom: 3px solid var(--primary);
+            letter-spacing: 1px;
+        }
+        .header-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #ecf0f1;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .readout {
+            font-size: 2.5em;
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--highlight);
+            font-weight: bold;
+            background: #eaf2f8;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #d4e6f1;
+            min-width: 250px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: all 0.1s;
+        }
+        .readout.error-state {
+            color: var(--accent);
+            border-color: var(--accent);
+            background: #fdedec;
+            text-shadow: 0 0 5px rgba(231, 76, 60, 0.3);
+        }
+        .readout-true-val {
+            font-size: 0.35em;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        .readout-error-label {
+            font-size: 0.35em;
+            color: var(--accent);
+            margin-top: 5px;
+            font-weight: normal;
+        }
+        .settings {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-grow: 1;
+        }
+        select {
+            padding: 12px;
+            font-size: 1.1em;
+            border-radius: 6px;
+            border: 1px solid var(--steel-mid);
+            background: var(--steel-light);
+            cursor: pointer;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        /* --- SENSOR GRAFIK --- */
+        .sensor-viewport {
+            position: relative;
+            width: 100%;
+            height: 480px; /* Feste Höhe für stabiles Layout */
+            background: #ffffff;
+            border: 2px solid var(--steel-mid);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: inset 0 5px 15px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            background-image: 
+                linear-gradient(rgba(189, 195, 199, 0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(189, 195, 199, 0.2) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        /* Mechanik (Links) - Explizit als Koordinatensystem */
+        .mechanics-system {
+            position: relative;
+            width: 320px;
+            height: 100%;
+            border-right: 1px dashed var(--steel-mid);
+            flex-shrink: 0;
+            background: rgba(255,255,255,0.5);
+        }
+
+        /* Sensor Gehäuse */
+        .sensor-housing {
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            width: 250px;
+            height: 110px;
+            background: linear-gradient(to bottom, #7f8c8d, #95a5a6);
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            z-index: 10;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            box-sizing: border-box;
+        }
+        .sensor-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-weight: bold;
+            font-size: 0.85em;
+            color: #fff;
+        }
+        
+        /* Optische Komponenten im Gehäuse */
+        .laser-diode {
+            position: absolute;
+            bottom: -2px;
+            left: 40px; /* Mitte liegt bei 30+40+10 = X:80 */
+            width: 20px;
+            height: 18px;
+            background: #333;
+            border-radius: 3px 3px 0 0;
+            border: 2px solid var(--primary);
+            border-bottom: none;
+        }
+        .laser-lens {
+            position: absolute;
+            bottom: -6px;
+            left: 43px;
+            width: 14px;
+            height: 6px;
+            background: rgba(255, 71, 87, 0.8);
+            border-radius: 50%;
+        }
+        .receiver-lens {
+            position: absolute;
+            bottom: -10px;
+            left: 170px; /* Mitte liegt bei 30+170+16 = X:216 */
+            width: 32px;
+            height: 14px;
+            background: rgba(52, 152, 219, 0.6);
+            border: 1px solid var(--highlight);
+            border-radius: 50%;
+            transform: rotate(-30deg); /* Linse zur Triangulation gekippt */
+        }
+        .ccd-element {
+            position: absolute;
+            top: 35px;
+            left: 140px;
+            width: 80px;
+            height: 10px;
+            background: #27ae60;
+            border: 2px solid #2c3e50;
+            transform: rotate(-15deg); /* Scheimpflug-Bedingung */
+            box-shadow: 0 0 5px rgba(46, 213, 115, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 8px;
+            font-weight: bold;
+        }
+
+        /* SVG Overlay für Lichtstrahlen (Exakt über Mechanics) */
+        .optics-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 320px;
+            height: 100%;
+            z-index: 20; /* FIX: Ebene von 5 auf 20 erhöht, damit das Licht über dem Gehäuse liegt */
+            pointer-events: none;
+        }
+        
+        /* Glühender Punkt Animation */
+        @keyframes pulse-glow {
+            0% { opacity: 0.8; r: 3; }
+            50% { opacity: 1; r: 5; }
+            100% { opacity: 0.8; r: 3; }
+        }
+        .laser-spot { animation: pulse-glow 0.1s infinite alternate; }
+
+        /* Fließender Strahlengang Animation */
+        @keyframes flow-ray {
+            to { stroke-dashoffset: -12; }
+        }
+        .flowing-ray {
+            stroke-dasharray: 4 4;
+            animation: flow-ray 0.4s linear infinite;
+        }
+
+        /* Werkstück (unten, beweglich) */
+        .target-assembly {
+            position: absolute;
+            /* Top wird durch JS gesteuert */
+            left: 20px;
+            width: 280px;
+            height: 80px;
+            background: linear-gradient(135deg, #ecf0f1, #bdc3c7);
+            border: 2px solid var(--primary);
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+            transition: top 0.1s linear, background 0.3s;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+        }
+        /* Styling für glänzende Oberfläche */
+        .target-assembly.shiny {
+            background: linear-gradient(135deg, #ffffff 0%, #dcdde1 30%, #ffffff 50%, #718093 100%);
+            border-top: 3px solid #f5f6fa;
+            box-shadow: 0 -5px 20px rgba(255,255,255,0.8);
+        }
+        
+        .target-surface-line {
+            width: 100%;
+            height: 4px;
+            background: rgba(0,0,0,0.1);
+        }
+        .target-label {
+            color: var(--primary);
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        /* Signal Visualizer (Rechts) */
+        .signal-panel {
+            width: calc(100% - 340px);
+            margin: 15px;
+            background: var(--bg-dark);
+            border: 1px solid var(--steel-mid);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 10;
+            box-sizing: border-box;
+        }
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.05em;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding-bottom: 8px;
+        }
+        .data-row strong {
+            color: var(--primary);
+        }
+
+        /* CCD Array Graph */
+        .graph-box {
+            margin-top: 10px;
+            background: #2c3e50;
+            border-radius: 6px;
+            padding: 15px;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .graph-box canvas {
+            width: 100%;
+            height: 100%;
+            min-height: 150px;
+            background: #1a252f;
+            border-radius: 4px;
+            display: block;
+        }
+        .graph-legend {
+            display: flex;
+            justify-content: space-around;
+            font-size: 0.85em;
+            color: #ecf0f1;
+            margin-top: 10px;
+        }
+
+        /* --- STEUERUNG --- */
+        .controls {
+            margin-top: 25px;
+            padding: 20px;
+            background: var(--steel-light);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            height: 8px;
+            background: var(--steel-mid);
+            border-radius: 4px;
+            outline: none;
+        }
+        
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--steel-mid);
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            flex-shrink: 0;
+        }
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider-toggle {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--steel-dark);
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider-toggle:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        #surface-toggle:checked + .slider-toggle { background-color: #34495e; /* Glänzend dunkel */ }
+        #surface-toggle:checked + .slider-toggle:before { transform: translateX(26px); }
+        
+        #ray-toggle:checked + .slider-toggle { background-color: var(--highlight); /* Blau für Strahlen */ }
+        #ray-toggle:checked + .slider-toggle:before { transform: translateX(26px); }
+
+        .explanation {
+            background: white;
+            padding: 15px;
+            border-left: 5px solid var(--highlight);
+            border-radius: 4px;
+            font-size: 1.05em;
+            line-height: 1.5;
+        }
+        .explanation.error-box {
+            border-left-color: var(--accent);
+            background: #fdedec;
+        }
+
+        /* --- THEORIE GRID --- */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .info-card {
+            background: #ffffff;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .info-card h3 {
+            margin-top: 0;
+            color: #2980b9;
+            font-size: 1.2em;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+        .info-card ul {
+            padding-left: 20px;
+            margin-bottom: 0;
+        }
+        .info-card li {
+            margin-bottom: 8px;
+        }
+        .badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .badge.warning { background: var(--accent); }
+        .badge.success { background: var(--highlight); }
+        .badge.optical { background: #ff4757; color: white; }
+        
+        @media (max-width: 768px) {
+            .info-grid { grid-template-columns: 1fr; }
+            .sensor-viewport { flex-direction: column; height: auto; }
+            .mechanics-system { width: 100%; border-right: none; border-bottom: 1px dashed var(--steel-mid); height: 400px; }
+            .signal-panel { width: calc(100% - 30px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1 class="main-title">Messmittel - Laser Triangulation</h1>
+        
+        <div class="header-panel">
+            <div class="settings">
+                <label for="resolution-select"><strong>Messbereich & Auflösung:</strong></label>
+                <select id="resolution-select">
+                    <option value="0.01">10 µm (0,01 mm) - Standard (±20 mm Hub)</option>
+                    <option value="0.001">1 µm (0,001 mm) - High-End</option>
+                </select>
+            </div>
+            <div class="readout" id="measurement-display">
+                <span class="readout-true-val" id="true-val-label">Wahrer Abstand: 100.00 mm</span>
+                <span id="main-readout-val">100.00 mm</span>
+                <span class="readout-error-label" id="error-label" style="display:none;">(Signalverlust! Spiegelnde Oberfläche)</span>
+            </div>
+        </div>
+
+        <div class="sensor-viewport" id="scale-viewport">
+            
+            <!-- Mechanische Sensor Darstellung -->
+            <div class="mechanics-system">
+                
+                <!-- SVG für Lichtstrahlen (Perfekt überlagert) -->
+                <svg class="optics-svg" id="optics-svg">
+                    <!-- Laserstrahl senkrecht nach unten -->
+                    <line id="laser-beam" x1="80" y1="130" x2="80" y2="250" stroke="var(--laser-color)" stroke-width="2" filter="drop-shadow(0 0 4px var(--laser-color))" />
+                    
+                    <!-- Diffuse Streuung (Matte Oberfläche) -> zum Empfänger -->
+                    <polygon id="scatter-cone" points="80,250 198,140 220,126" fill="var(--laser-glow)" opacity="0.6" />
+                    
+                    <!-- Fokusstrahl hinter der Linse auf den CCD (Solider Kegel) -->
+                    <polygon id="focus-cone" points="198,140 220,126 210,65" fill="var(--laser-glow)" opacity="0.8" style="transition: opacity 0.3s;" />
+                    
+                    <!-- NEU: Detaillierte Einzelstrahlen hinter der Linse (Optional einblendbar) -->
+                    <g id="detailed-rays" opacity="0" style="transition: opacity 0.3s;">
+                        <line id="ray-top" class="flowing-ray" x1="198" y1="140" x2="210" y2="65" stroke="var(--laser-color)" stroke-width="1.5" opacity="0.7" />
+                        <line id="ray-bottom" class="flowing-ray" x1="220" y1="126" x2="210" y2="65" stroke="var(--laser-color)" stroke-width="1.5" opacity="0.7" />
+                        <line id="ray-center" class="flowing-ray" x1="209" y1="133" x2="210" y2="65" stroke="#ffffff" stroke-width="2" filter="drop-shadow(0 0 3px var(--laser-color))" />
+                    </g>
+                    
+                    <!-- Gerichtete Reflexion (Spiegelnd) -> Reflektiert exakt gerade zurück -->
+                    <line id="specular-beam" x1="80" y1="250" x2="80" y2="130" stroke="#ffcccc" stroke-width="3" filter="drop-shadow(0 0 8px #ffffff)" opacity="0" />
+                    
+                    <!-- Leuchtende Messpunkte -->
+                    <circle id="target-spot" class="laser-spot" cx="80" cy="250" r="4" fill="#ffffff" filter="drop-shadow(0 0 5px var(--laser-color))" />
+                    <circle id="ccd-spot" class="laser-spot" cx="210" cy="65" r="3" fill="#ffffff" filter="drop-shadow(0 0 5px var(--ccd-color))" />
+                </svg>
+
+                <!-- Sensor Gehäuse -->
+                <div class="sensor-housing">
+                    <div class="sensor-label">Triangulationssensor</div>
+                    <div class="laser-diode" title="Laserdiode (Sender)"></div>
+                    <div class="laser-lens"></div>
+                    
+                    <div class="ccd-element" title="CMOS/CCD Empfängerzeile (Scheimpflug gekippt)">CCD-Array</div>
+                    <div class="receiver-lens" title="Empfängeroptik (Linse)"></div>
+                </div>
+
+                <!-- Simuliertes Bauteil/Werkstück -->
+                <div class="target-assembly" id="target">
+                    <div class="target-surface-line"></div>
+                    <div class="target-label" id="target-label-text">Messobjekt (Matt)</div>
+                </div>
+            </div>
+
+            <!-- Signal Visualisierung -->
+            <div class="signal-panel">
+                <div class="data-row">
+                    <span>Lichtintensität (Empfänger):</span>
+                    <strong id="val-intensity" style="color: var(--ccd-color)">Optimal (95%)</strong>
+                </div>
+                <div class="data-row">
+                    <span>Berechneter Triangulationswinkel:</span>
+                    <strong id="val-angle">35.4°</strong>
+                </div>
+                
+                <!-- CCD Array Graph -->
+                <div class="graph-box" title="Lichtverteilung auf dem CCD-Zeilensensor">
+                    <canvas id="ccd-canvas"></canvas>
+                    <div class="graph-legend">
+                        <span>X: Pixel-Position auf CCD</span>
+                        <span>Y: Lichtintensität (Spannung)</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="controls">
+            <div class="slider-group">
+                <label for="fine-slider"><strong>Abstand zum Sensor (80.00 mm bis 120.00 mm):</strong></label>
+                <input type="range" id="fine-slider" min="80" max="120" step="0.01" value="100.00">
+            </div>
+
+            <div class="toggle-container">
+                <label class="switch">
+                    <input type="checkbox" id="surface-toggle">
+                    <span class="slider-toggle"></span>
+                </label>
+                <div>
+                    <strong>Spiegelnde/Glänzende Oberfläche simulieren</strong><br>
+                    <small id="surface-status" style="color: var(--steel-dark);">Matte Oberfläche: Ausreichend diffuses Streulicht erreicht den Empfänger.</small>
+                </div>
+            </div>
+
+            <!-- NEUER TOGGLE: Strahlengang Optik -->
+            <div class="toggle-container">
+                <label class="switch">
+                    <input type="checkbox" id="ray-toggle">
+                    <span class="slider-toggle"></span>
+                </label>
+                <div>
+                    <strong>Detaillierten Strahlengang (Optik) einblenden</strong><br>
+                    <small style="color: var(--steel-dark);">Zeigt mit animierten Laserlinien, wie die Linse das Streulicht auf das CCD-Pixel bündelt.</small>
+                </div>
+            </div>
+            
+            <div class="explanation" id="dynamic-explanation"></div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-card">
+                <span class="badge optical">OPTISCH (Berührungslos)</span>
+                <h3>Prinzip & Technik</h3>
+                <ul>
+                    <li><strong>Prinzip:</strong> Dreiecksvermessung. Ein Laserstrahl trifft das Objekt. Die dort entstehende diffuse Reflexion wird über eine Linse schräg auf einen Zeilensensor (CCD/CMOS) abgebildet.</li>
+                    <li><strong>Auflösung:</strong> 0,01 mm – 0,001 mm (10 µm bis 1 µm)</li>
+                    <li><strong>Signalverarbeitung:</strong> Der Sensor sucht im Rauschen des Arrays nach dem Intensitäts-Peak. Über Winkelfunktionen wird die Pixelposition exakt in einen Abstand umgerechnet.</li>
+                    <li><strong>Scheimpflug-Bedingung:</strong> Beachte den Kippwinkel des grünen CCD-Arrays im Sensor! Das Array ist bewusst schräg zur Linse eingebaut. Nur durch diesen geometrischen Trick bleibt der Laserpunkt über den gesamten Entfernungsbereich von 80-120mm scharf fokussiert.</li>
+                </ul>
+            </div>
+            <div class="info-card">
+                <span class="badge success">VORTEILE</span>
+                <span class="badge warning">NACHTEILE</span>
+                <h3>Eigenschaften & Einsatz</h3>
+                <ul>
+                    <li><strong>Vorteil:</strong> Messung erfolgt aus der Distanz (großer Arbeitsabstand) ohne jegliche Krafteinwirkung auf das Bauteil.</li>
+                    <li><strong>Vorteil:</strong> Sehr hohe Messfrequenzen (bis zu 100 kHz), ideal für bewegte Objekte.</li>
+                    <li><strong>Nachteil:</strong> Anfällig bei <em>stark glänzenden</em> (spiegelnden) Oberflächen. Da der Laserstrahl senkrecht einfällt, wird das Licht hierbei gerichtet wie an einem Spiegel in den Laser zurückgeworfen. Der schräge Empfänger geht leer aus (Signalverlust).</li>
+                    <li><strong>Einsatzgebiet:</strong> Qualitätskontrolle am laufenden Band, Erfassung von Höhenprofilen.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM ELEMENTE ---
+        const slider = document.getElementById('fine-slider');
+        const surfaceToggle = document.getElementById('surface-toggle');
+        const rayToggle = document.getElementById('ray-toggle');
+        const resolutionSelect = document.getElementById('resolution-select');
+        const displayContainer = document.getElementById('measurement-display');
+        const trueValLabel = document.getElementById('true-val-label');
+        const mainReadoutVal = document.getElementById('main-readout-val');
+        const errorLabel = document.getElementById('error-label');
+        const surfaceStatus = document.getElementById('surface-status');
+        const explanation = document.getElementById('dynamic-explanation');
+        
+        // Visuals & SVG
+        const targetAssembly = document.getElementById('target');
+        const targetLabelText = document.getElementById('target-label-text');
+        
+        const laserBeam = document.getElementById('laser-beam');
+        const scatterCone = document.getElementById('scatter-cone');
+        const focusCone = document.getElementById('focus-cone');
+        const specularBeam = document.getElementById('specular-beam');
+        const targetSpot = document.getElementById('target-spot');
+        const ccdSpotSvg = document.getElementById('ccd-spot');
+        
+        // Detaillierte Strahlen
+        const detailedRaysGrp = document.getElementById('detailed-rays');
+        const rayTop = document.getElementById('ray-top');
+        const rayBottom = document.getElementById('ray-bottom');
+        const rayCenter = document.getElementById('ray-center');
+        
+        // Signal Data
+        const valIntensity = document.getElementById('val-intensity');
+        const valAngle = document.getElementById('val-angle');
+        
+        // Canvas Setup (Responsiv anpassen)
+        const canvas = document.getElementById('ccd-canvas');
+        const ctx = canvas.getContext('2d');
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth - 30; // Padding abziehen
+            canvas.height = canvas.parentElement.clientHeight - 40;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        // Timeout für initiales Setup nach Layout-Berechnung
+        setTimeout(resizeCanvas, 10);
+
+        // --- EXAKTE GEOMETRIE KONSTANTEN (Abgestimmt auf CSS) ---
+        const MIN_DIST = 80;
+        const MAX_DIST = 120;
+        
+        // Koordinaten des Senders und Empfängers
+        const LASER_X = 80;
+        const SENSOR_Y_OFFSET = 130; // Höhe bis Laser-Austritt
+        
+        // Linse (Links: X=198, Y=140 | Rechts: X=220, Y=126)
+        const LENS_LX = 198, LENS_LY = 140;
+        const LENS_RX = 220, LENS_RY = 126;
+        const LENS_CX = (LENS_LX + LENS_RX) / 2; // Mitte der Linse
+        const LENS_CY = (LENS_LY + LENS_RY) / 2;
+        
+        // CCD-Array Endpunkte (Gekippt)
+        // Linker Rand (Nahe Linse): X=180, Y=65
+        // Rechter Rand (Weit weg): X=245, Y=50
+        const CCD_START_X = 180, CCD_START_Y = 65;
+        const CCD_END_X = 245, CCD_END_Y = 50;
+
+        let currentRes = 0.01;
+        let animationFrameId;
+
+        // Geometrie Variablen (für Canvas und SVG)
+        let ccdSpotPosition = 0; // 0 bis 1 (links bis rechts auf dem Array)
+        let signalIntensity = 1.0;
+        let noiseLevel = 0.0;
+        let detectedPeak = 0; // Vom µC errechneter Schwerpunkt
+
+        // --- HAUPT UPDATE FUNKTION ---
+        function calculateAndRender() {
+            let trueDist = parseFloat(slider.value);
+            const isShiny = surfaceToggle.checked;
+            const showRays = rayToggle.checked;
+            
+            // 1. PHYSIK & GEOMETRIE
+            // Die Position auf dem CCD (0.1 bis 0.9 für den visuellen Messbereich)
+            let normalizedDist = (trueDist - MIN_DIST) / (MAX_DIST - MIN_DIST);
+            ccdSpotPosition = 0.1 + (normalizedDist * 0.8);
+            
+            // Winkel berechnen: Gegenkathete (Abstand Laser zu Linse X ~ 130mm), Ankathete (Messabstand Y)
+            let angleRad = Math.atan(130 / trueDist);
+            let angleDeg = angleRad * (180 / Math.PI);
+
+            // Signalqualität und Rauschen
+            if (isShiny) {
+                // Bei spiegelnder Oberfläche geht das Licht zurück in den Laser.
+                signalIntensity = 0.10; // Fast tot
+                noiseLevel = 0.25; // Starkes Rauschen
+            } else {
+                signalIntensity = 0.95; // Starker Peak
+                noiseLevel = 0.02; // Normales Grundrauschen
+            }
+
+            // 2. MESSWERT ERMITTELN (Sensor Logik simuliert)
+            let errorOffset = 0;
+            if (isShiny) {
+                // µC springt ziellos umher, da Rauschen > Signal
+                errorOffset = (Math.random() - 0.5) * 8.0; 
+                detectedPeak = Math.random(); // Graph Tracking-Linie springt
+            } else {
+                // Tracking stabil auf dem physikalischen Spot
+                detectedPeak = ccdSpotPosition; 
+            }
+            
+            let measuredDist = trueDist + errorOffset;
+            
+            // Begrenzung & Rundung
+            measuredDist = Math.max(MIN_DIST - 5, Math.min(MAX_DIST + 5, measuredDist));
+            let displayRead = Math.round(measuredDist / currentRes) * currentRes;
+
+            // Formatierung
+            const decimals = currentRes === 0.01 ? 2 : 3;
+            trueValLabel.textContent = `Wahrer Abstand: ${trueDist.toFixed(decimals)} mm`;
+            
+            if (isShiny) {
+                mainReadoutVal.textContent = "---.-- mm"; 
+                valIntensity.textContent = "Kritisch (< 10%)";
+                valIntensity.style.color = "var(--accent)";
+            } else {
+                mainReadoutVal.textContent = displayRead.toFixed(decimals) + " mm";
+                valIntensity.textContent = "Optimal (> 90%)";
+                valIntensity.style.color = "var(--ccd-color)";
+            }
+            
+            valAngle.textContent = angleDeg.toFixed(1) + "°";
+
+            // --- UI Updates Status ---
+            if (isShiny) {
+                displayContainer.classList.add('error-state');
+                errorLabel.style.display = 'block';
+                surfaceStatus.textContent = "Gerichtete Reflexion: Das Licht blendet exakt senkrecht zurück in den Sender. Empfänger geht leer aus!";
+                surfaceStatus.style.color = "#d35400";
+                explanation.classList.add('error-box');
+                targetAssembly.classList.add('shiny');
+                targetLabelText.textContent = "Messobjekt (Spiegelnd/Metall)";
+            } else {
+                displayContainer.classList.remove('error-state');
+                errorLabel.style.display = 'none';
+                surfaceStatus.textContent = "Matte Oberfläche: Ausreichend diffuses Streulicht erreicht den Empfänger.";
+                surfaceStatus.style.color = "var(--steel-dark)";
+                explanation.classList.remove('error-box');
+                targetAssembly.classList.remove('shiny');
+                targetLabelText.textContent = "Messobjekt (Matt/Kunststoff)";
+            }
+
+            // --- MECHANIK & SVG VISUALISIERUNG ---
+            // Abstands-Mapping für UI: 80mm -> 160px Abstand, 120mm -> 320px Abstand
+            const visualDist = 160 + ((trueDist - MIN_DIST) * 4);
+            const targetY = SENSOR_Y_OFFSET + visualDist; 
+            targetAssembly.style.top = targetY + 'px';
+
+            // Laser Linie & Target-Spot anpassen
+            laserBeam.setAttribute('y2', targetY);
+            targetSpot.setAttribute('cy', targetY);
+            
+            if (isShiny) {
+                // Spiegelnd: Kein diffuser Kegel
+                scatterCone.setAttribute('opacity', '0');
+                focusCone.setAttribute('opacity', '0');
+                detailedRaysGrp.setAttribute('opacity', '0');
+                
+                ccdSpotSvg.setAttribute('opacity', '0');
+                targetSpot.setAttribute('r', '2');
+                targetSpot.setAttribute('fill', '#ffcccc');
+                
+                // Harter Strahl zurück in den Laser
+                specularBeam.setAttribute('y1', targetY);
+                specularBeam.setAttribute('y2', SENSOR_Y_OFFSET); 
+                specularBeam.setAttribute('opacity', '1');
+            } else {
+                // Matt: Diffuser Kegel zum Empfänger
+                specularBeam.setAttribute('opacity', '0');
+                targetSpot.setAttribute('r', '4');
+                targetSpot.setAttribute('fill', '#ffffff');
+                ccdSpotSvg.setAttribute('opacity', '1');
+                
+                // Streukegel geht vom Target-Spot zu den Linsen-Enden
+                scatterCone.setAttribute('points', `${LASER_X},${targetY} ${LENS_LX},${LENS_LY} ${LENS_RX},${LENS_RY}`);
+                scatterCone.setAttribute('opacity', '0.6');
+                
+                // Fokuspunkt-Interpolation entlang der gekippten CCD-Zeile
+                let focusX = CCD_START_X + (ccdSpotPosition * (CCD_END_X - CCD_START_X));
+                let focusY = CCD_START_Y + (ccdSpotPosition * (CCD_END_Y - CCD_START_Y));
+                
+                ccdSpotSvg.setAttribute('cx', focusX);
+                ccdSpotSvg.setAttribute('cy', focusY);
+                
+                // Toggle Logik für den detaillierten Strahlengang in der Optik
+                if (showRays) {
+                    focusCone.setAttribute('opacity', '0.2'); // Solider Kegel wird transparent
+                    detailedRaysGrp.setAttribute('opacity', '1'); // Detaillierte Strahlen an
+                    
+                    // Randstrahl oben/links
+                    rayTop.setAttribute('x2', focusX);
+                    rayTop.setAttribute('y2', focusY);
+                    // Randstrahl unten/rechts
+                    rayBottom.setAttribute('x2', focusX);
+                    rayBottom.setAttribute('y2', focusY);
+                    // Hauptstrahl durch Linsenmitte
+                    rayCenter.setAttribute('x2', focusX);
+                    rayCenter.setAttribute('y2', focusY);
+                } else {
+                    focusCone.setAttribute('points', `${LENS_LX},${LENS_LY} ${LENS_RX},${LENS_RY} ${focusX},${focusY}`);
+                    focusCone.setAttribute('opacity', '0.8'); // Solider Kegel aktiv
+                    detailedRaysGrp.setAttribute('opacity', '0'); // Einzelstrahlen aus
+                }
+            }
+
+            // --- ERKLÄRUNGSTEXT BERECHNEN ---
+            let explainText = "";
+            if (isShiny) {
+                explainText = `<strong>MESSFEHLER: GERICHTETE REFLEXION</strong><br>`;
+                explainText += `Der Laserstrahl trifft senkrecht auf eine extrem glatte, spiegelnde Oberfläche. Nach dem Gesetz <em>"Einfallswinkel = Ausfallswinkel"</em> wird der Großteil des Lichts exakt dorthin zurückgeworfen, woher er kam.<br><br>`;
+                explainText += `<strong>Folge im Graph:</strong> Das CCD-Array im schräg montierten Empfänger erhält nur noch Grundrauschen. Der Mikrocontroller (siehe rote Linie im Graph) sucht verzweifelt nach einem Intensitäts-Schwerpunkt, springt hin und her und meldet einen Messfehler.`;
+            } else {
+                explainText = `<strong>Funktionsweise (Triangulation):</strong><br>`;
+                explainText += `Der Laser trifft bei <strong>${trueDist.toFixed(1)} mm</strong> auf das Bauteil. Die raue Oberfläche streut das Licht diffus in alle Richtungen. Sichtbar als leuchtender Punkt!<br><br>`;
+                explainText += `Ein Teil des Streulichts fällt im Winkel von <strong>&alpha; = ${angleDeg.toFixed(1)}°</strong> durch die Empfängerlinse. Dort wird es gebündelt und trifft als scharfer Lichtpunkt auf die Pixel des CCD-Arrays (siehe die Auswertung im Graphen). Über diese Pixelposition errechnet der Sensor den exakten Abstand.`;
+            }
+            explanation.innerHTML = explainText;
+        }
+
+        // --- CCD GRAPH RENDERER (Live Animation) ---
+        function drawCCDGraph() {
+            if(!canvas.width || canvas.width < 50) resizeCanvas();
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const w = canvas.width;
+            const h = canvas.height;
+            
+            // X-Achse (Pixel)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.beginPath();
+            ctx.moveTo(0, h-20);
+            ctx.lineTo(w, h-20);
+            ctx.stroke();
+
+            // Zeichne CCD Pixel als Balkendiagramm
+            const numPixels = 100;
+            const pixelWidth = w / numPixels;
+            
+            // Physikalische Peak-Position im Array
+            const peakPixel = ccdSpotPosition * numPixels;
+            
+            for (let i = 0; i < numPixels; i++) {
+                // 1. Grundrauschen
+                let intensity = Math.random() * noiseLevel;
+                
+                // 2. Gauss-Peak addieren (Lichtpunkt-Verteilung)
+                const sigma = 3.5; // Optische Breite des Lichtpunkts
+                let peakContrib = signalIntensity * Math.exp(-Math.pow(i - peakPixel, 2) / (2 * Math.pow(sigma, 2)));
+                
+                intensity += peakContrib;
+                intensity = Math.min(1.0, intensity); // Clipping
+                
+                // 3. Balken zeichnen
+                const barHeight = intensity * (h - 30);
+                
+                if (surfaceToggle.checked) {
+                    ctx.fillStyle = 'rgba(231, 76, 60, 0.7)'; // Rot bei Fehler
+                } else {
+                    ctx.fillStyle = 'rgba(46, 213, 115, 0.8)'; // Grün bei gutem Signal
+                }
+                
+                ctx.fillRect(i * pixelWidth, h - 20 - barHeight, Math.max(1, pixelWidth - 1), barHeight);
+            }
+            
+            // 4. Zeichne Schwellwert-Linie (Threshold des Sensors)
+            ctx.strokeStyle = 'rgba(241, 196, 15, 0.5)';
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            const thresholdY = h - 20 - (0.35 * (h-30)); // 35% Threshold
+            ctx.moveTo(0, thresholdY);
+            ctx.lineTo(w, thresholdY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            ctx.fillStyle = 'rgba(241, 196, 15, 0.8)';
+            ctx.font = '10px sans-serif';
+            ctx.fillText("Detektions-Schwellwert", 5, thresholdY - 5);
+
+            // 5. Tracking-Linie des Mikrocontrollers (Wo er den Peak "vermutet")
+            const trackingX = detectedPeak * w;
+            ctx.strokeStyle = surfaceToggle.checked ? '#e74c3c' : '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(trackingX, h - 20);
+            ctx.lineTo(trackingX, 10);
+            ctx.stroke();
+            
+            ctx.fillStyle = surfaceToggle.checked ? '#e74c3c' : '#ffffff';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'center';
+            if (surfaceToggle.checked) {
+                ctx.fillText("Rauschen! µC irrt umher", trackingX, 10);
+            } else {
+                ctx.fillText("Peak gefunden", trackingX, 10);
+            }
+            ctx.textAlign = 'left'; // Reset
+            
+            // Request next frame für Live-Rauschen
+            animationFrameId = requestAnimationFrame(drawCCDGraph);
+        }
+
+        // --- EVENT LISTENERS ---
+        slider.addEventListener('input', calculateAndRender);
+        rayToggle.addEventListener('change', calculateAndRender);
+        surfaceToggle.addEventListener('change', calculateAndRender);
+        
+        resolutionSelect.addEventListener('change', (e) => {
+            currentRes = parseFloat(e.target.value);
+            slider.step = currentRes;
+            calculateAndRender();
+        });
+
+        // Initialisierung
+        setTimeout(() => {
+            calculateAndRender();
+            drawCCDGraph(); // Startet den Render-Loop für das Rauschen
+        }, 50);
+
+    </script>
+</body>
+</html>
