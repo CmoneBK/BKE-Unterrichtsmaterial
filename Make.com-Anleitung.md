@@ -66,7 +66,7 @@ Dieses Modul übernimmt das eigentliche Speichern. Es liegt auf der Hauptlinie (
 > **⚠️ Wichtiger Hinweis zum Code-Feld:**
 > Sie müssen die Variablen im Code durch die echten Variablen-Kästen in Make.com ersetzen! 
 > * Ersetzen Sie `1.htmlCode` durch die rosa Variable **`htmlCode`** aus Modul 1 (Webhook). Das Wort `base64` finden Sie unter dem Reiter "String Functions".
-> * Ersetzen Sie beide `2.Data.sha` durch die grüne Variable **`sha`** aus Modul 2 (HTTP GET Spion). Behalten Sie die einfachen und doppelten Anführungszeichen exakt so bei, wie sie im Block stehen.
+> * Ersetzen Sie beide `2.Data.sha` durch die blaue Variable **`sha`** aus Modul 2 (HTTP GET Spion). Behalten Sie die einfachen und doppelten Anführungszeichen exakt so bei, wie sie im Block stehen.
 
 ### Schritt 5: Aktivierung
 1. Unten links auf das **Disketten-Symbol** (Save) klicken.
