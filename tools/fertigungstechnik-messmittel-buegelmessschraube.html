@@ -1,0 +1,869 @@
+---
+title: "Fertigungstechnik: Messmittel - Bügelmessschraube"
+---
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fertigungstechnik: Messmittel - Bügelmessschraube</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #e74c3c;
+            --highlight: #2980b9;
+            --steel-light: #ecf0f1;
+            --steel-mid: #bdc3c7;
+            --steel-dark: #7f8c8d;
+            --bg-dark: #eef2f5;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--primary);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 1000px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        h1.main-title {
+            text-align: center;
+            color: var(--primary);
+            margin-top: 0;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+            padding-bottom: 15px;
+            border-bottom: 3px solid var(--primary);
+            letter-spacing: 1px;
+        }
+        .header-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #ecf0f1;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .readout {
+            font-size: 2.5em;
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--highlight);
+            font-weight: bold;
+            background: #eaf2f8;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #d4e6f1;
+            min-width: 250px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .readout.error-state {
+            color: var(--accent);
+            border-color: var(--accent);
+            background: #fdedec;
+        }
+        .readout-true-val {
+            font-size: 0.35em;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        .readout-error-label {
+            font-size: 0.35em;
+            color: var(--accent);
+            margin-top: 5px;
+            font-weight: normal;
+        }
+        .settings {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-grow: 1;
+        }
+        select {
+            padding: 12px;
+            font-size: 1.1em;
+            border-radius: 6px;
+            border: 1px solid var(--steel-mid);
+            background: var(--steel-light);
+            cursor: pointer;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        /* --- MIKROMETER GRAFIK --- */
+        .micrometer-viewport {
+            position: relative;
+            width: 100%;
+            height: 280px;
+            background: #ffffff;
+            border: 2px solid var(--steel-mid);
+            border-radius: 8px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            box-shadow: inset 0 5px 15px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            padding-left: 50px;
+            box-sizing: border-box; /* FIX: Verhindert das Auskragen über den Rahmen */
+        }
+        
+        /* Skalenhülse (Statischer Teil) */
+        .sleeve {
+            position: relative;
+            width: 600px;
+            height: 160px; /* Erhöht für die Vernier-Skala */
+            background: linear-gradient(to bottom, #d5dbdb 0%, #ecf0f1 30%, #ecf0f1 70%, #d5dbdb 100%);
+            border-top: 1px solid var(--steel-dark);
+            border-bottom: 1px solid var(--steel-dark);
+            z-index: 1;
+        }
+        
+        /* Bezugslinie (Datum line) */
+        .datum-line {
+            position: absolute;
+            top: 110px; /* Exakt positioniert, um Platz für den Nonius oben zu lassen */
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--primary);
+            transform: translateY(-50%);
+            transition: background-color 0.2s, height 0.2s, box-shadow 0.2s;
+        }
+        .datum-line.highlight {
+            background-color: var(--highlight);
+            box-shadow: 0 0 5px var(--highlight);
+            height: 3px;
+            z-index: 10;
+        }
+        .datum-line.error-line {
+            background-color: var(--accent);
+            box-shadow: 0 0 5px var(--accent);
+        }
+
+        /* Vernier Skala auf der Hülse (0.001 mm Auflösung) */
+        .vernier-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none; /* Standardmäßig ausgeblendet */
+        }
+        
+        /* Die horizontalen Linien, die über die gesamte Hülse laufen */
+        .sleeve-vernier-tick {
+            position: absolute;
+            left: 0;
+            height: 1px;
+            width: 100%;
+            background-color: var(--primary);
+            opacity: 0.25; /* Dezent, da sie das Hauptbild kreuzen */
+            transform: translateY(-50%);
+            transition: opacity 0.2s, background-color 0.2s, height 0.2s, box-shadow 0.2s;
+        }
+        .sleeve-vernier-tick.highlight {
+            background-color: var(--highlight);
+            height: 2px;
+            opacity: 1;
+            box-shadow: 0 0 4px var(--highlight);
+            z-index: 10;
+        }
+        .sleeve-vernier-tick.error-line {
+            background-color: var(--accent);
+            box-shadow: 0 0 4px var(--accent);
+        }
+        
+        /* Die Labels, die dynamisch an der Kante der Trommel mitlaufen */
+        .sleeve-vernier-label {
+            position: absolute;
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--primary);
+            transform: translateY(-50%);
+            text-align: right;
+            width: 15px;
+            transition: color 0.2s, font-size 0.2s;
+            /* Weiße Umrandung, damit die Zahlen beim Überlagern der Striche lesbar bleiben */
+            text-shadow: 1px 1px 0px white, -1px -1px 0px white, 1px -1px 0px white, -1px 1px 0px white;
+            z-index: 12;
+        }
+        .sleeve-vernier-label.highlight-text {
+            color: var(--highlight);
+            font-size: 14px;
+        }
+        .sleeve-vernier-label.error-text {
+            color: var(--accent);
+        }
+        
+        /* Teilstriche auf der Hülse */
+        .sleeve-tick {
+            position: absolute;
+            width: 2px;
+            background-color: var(--primary);
+        }
+        .sleeve-tick.top {
+            bottom: 50px; /* 160px Hülse - 110px Datum = 50px */
+            height: 15px;
+        }
+        .sleeve-tick.bottom {
+            top: 110px;
+            height: 12px;
+        }
+        .sleeve-tick.top-5 {
+            height: 22px;
+        }
+        .sleeve-label {
+            position: absolute;
+            top: 128px;
+            transform: translateX(-50%);
+            font-weight: bold;
+            font-size: 12px;
+            color: var(--primary);
+        }
+
+        /* Messtrommel (Beweglicher Teil) */
+        .thimble-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50px; /* Startposition = 0 mm */
+            width: 300px;
+            height: 180px; /* Höher als die Hülse */
+            transform: translateY(-50%);
+            background: linear-gradient(to bottom, #bdc3c7 0%, #ecf0f1 30%, #ecf0f1 70%, #bdc3c7 100%);
+            border: 2px solid var(--steel-dark);
+            border-left: 3px solid var(--primary);
+            border-radius: 0 5px 5px 0;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.3);
+            overflow: hidden;
+            z-index: 20;
+        }
+
+        /* Kordelierung / Rändelung visuell andeuten */
+        .knurling {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 80px;
+            height: 100%;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.1) 2px,
+                rgba(0,0,0,0.1) 4px
+            );
+            border-left: 1px solid var(--steel-mid);
+        }
+
+        /* Skala auf der Trommel (rotiert vertikal) */
+        .thimble-scale-container {
+            position: absolute;
+            left: 0;
+            top: 120px; /* Fluchtet exakt mit der 110px Datumslinie der Hülse (da die Trommel 20px höher ist) */
+            width: 60px;
+            height: 5000px; /* Genug Platz für die rotierende Skala */
+        }
+
+        .thimble-tick {
+            position: absolute;
+            left: 0;
+            height: 2px;
+            background-color: var(--primary);
+            transform: translateY(-50%);
+            transition: background-color 0.2s, box-shadow 0.2s, width 0.2s;
+        }
+        .thimble-tick.short { width: 15px; }
+        .thimble-tick.long { width: 30px; }
+        .thimble-tick.highlight {
+            background-color: var(--highlight);
+            width: 40px;
+            box-shadow: 0 0 5px var(--highlight);
+            z-index: 10;
+        }
+        .thimble-tick.error-line {
+            background-color: var(--accent);
+            box-shadow: 0 0 5px var(--accent);
+        }
+
+        .thimble-label {
+            position: absolute;
+            left: 35px;
+            transform: translateY(-50%);
+            font-size: 13px;
+            font-weight: bold;
+            color: var(--primary);
+            transition: color 0.2s, font-size 0.2s;
+        }
+        .thimble-label.highlight-text {
+            color: var(--highlight);
+            font-size: 16px;
+        }
+        .thimble-label.error-text {
+            color: var(--accent);
+        }
+        
+        /* Ablese-Lupe / Markierung */
+        .reading-marker {
+            position: absolute;
+            top: 120px;
+            left: 0;
+            width: 40px;
+            height: 20px;
+            border: 2px solid var(--highlight);
+            border-left: none;
+            transform: translateY(-50%);
+            z-index: 5;
+            pointer-events: none;
+            border-radius: 0 4px 4px 0;
+            background: rgba(41, 128, 185, 0.1);
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .reading-marker.error-marker {
+            border-color: var(--accent);
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        /* --- STEUERUNG --- */
+        .controls {
+            margin-top: 25px;
+            padding: 20px;
+            background: var(--steel-light);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            height: 8px;
+            background: var(--steel-mid);
+            border-radius: 4px;
+            outline: none;
+        }
+        
+        /* Toggle Switch für die Ratsche */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--steel-mid);
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider-toggle {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--accent);
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider-toggle:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider-toggle {
+            background-color: var(--highlight);
+        }
+        input:checked + .slider-toggle:before {
+            transform: translateX(26px);
+        }
+
+        .explanation {
+            background: white;
+            padding: 15px;
+            border-left: 5px solid var(--highlight);
+            border-radius: 4px;
+            font-size: 1.05em;
+            line-height: 1.5;
+        }
+        .explanation.error-box {
+            border-left-color: var(--accent);
+            background: #fdedec;
+            color: #c0392b;
+        }
+
+        /* --- THEORIE GRID --- */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .info-card {
+            background: var(--bg-light);
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .info-card h3 {
+            margin-top: 0;
+            color: #2980b9;
+            font-size: 1.2em;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+        .info-card ul {
+            padding-left: 20px;
+            margin-bottom: 0;
+        }
+        .info-card li {
+            margin-bottom: 8px;
+        }
+        .badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .badge.warning { background: var(--accent); }
+        .badge.success { background: var(--highlight); }
+        
+        @media (max-width: 768px) {
+            .info-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1 class="main-title">Messmittel - Bügelmessschraube</h1>
+        
+        <div class="header-panel">
+            <div class="settings">
+                <label for="resolution-select"><strong>Gewindeuntersetzung & Auflösung:</strong></label>
+                <select id="resolution-select">
+                    <option value="0.01">0,01 mm (Standard, 0.5 mm Steigung, 50 Teilstriche)</option>
+                    <option value="0.001">0,001 mm (Authentischer Horizontal-Nonius)</option>
+                </select>
+            </div>
+            <div class="readout" id="measurement-display">
+                <span class="readout-true-val" id="true-val-label">Wahres Maß: 0.00 mm</span>
+                <span id="main-readout-val">0.00 mm</span>
+                <span class="readout-error-label" id="error-label" style="display:none;">(Zu viel Druck! Messbügel aufgebogen)</span>
+            </div>
+        </div>
+
+        <div class="micrometer-viewport" id="scale-viewport">
+            <!-- Statische Hülse -->
+            <div class="sleeve" id="sleeve">
+                <div class="datum-line" id="datum-line"></div>
+                <!-- Teilstriche und Nonius werden durch JS generiert -->
+            </div>
+            
+            <!-- Bewegliche Trommel -->
+            <div class="thimble-wrapper" id="thimble-wrapper">
+                <div class="reading-marker" id="reading-marker"></div>
+                <div class="thimble-scale-container" id="thimble-scale">
+                    <!-- Skala rotiert vertikal. JS generiert -->
+                </div>
+                <div class="knurling"></div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="slider-group">
+                <label for="fine-slider"><strong>Wahres Bauteilmaß (0.000 mm - 25.000 mm):</strong></label>
+                <input type="range" id="fine-slider" min="0" max="25" step="0.001" value="8.64">
+            </div>
+
+            <div class="toggle-container">
+                <label class="switch">
+                    <input type="checkbox" id="ratchet-toggle" checked>
+                    <span class="slider-toggle"></span>
+                </label>
+                <div>
+                    <strong>Gefühlsschraube (Ratsche) verwenden</strong><br>
+                    <small id="ratchet-status" style="color: var(--highlight);">Aktiviert: Konstante Messkraft, keine Deformation.</small>
+                </div>
+            </div>
+            
+            <div class="explanation" id="dynamic-explanation"></div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-card">
+                <span class="badge">MECHANISCH</span>
+                <h3>Prinzip & Auflösung</h3>
+                <ul>
+                    <li><strong>Werkzeug:</strong> Bügelmessschraube (Mikrometer)</li>
+                    <li><strong>Prinzip:</strong> Rotatorischer Kraftschluss / Schrauben</li>
+                    <li><strong>Auflösung:</strong> 0,01 mm – 0,001 mm</li>
+                    <li><strong>Technik:</strong> Die hohe Präzision entsteht durch die <em>Gewindeuntersetzung</em>. Eine Gewindesteigung von 0,5 mm wird auf dem Trommelumfang in 50 Teilstriche aufgeteilt (0,5 mm / 50 = 0,01 mm pro Strich).</li>
+                </ul>
+            </div>
+            <div class="info-card">
+                <span class="badge success">VORTEILE</span>
+                <span class="badge warning">NACHTEILE</span>
+                <h3>Eigenschaften & Einsatz</h3>
+                <ul>
+                    <li><strong>Vorteil:</strong> Konstante Messkraft durch die Ratsche (Gefühlsschraube) verhindert Deformationen.</li>
+                    <li><strong>Vorteil:</strong> Minimierter Abbescher Fehler (Maßverkörperung und Messachse liegen auf einer Linie / fluchten).</li>
+                    <li><strong>Nachteil:</strong> Begrenzter Hub (meist nur in 25 mm Schritten verfügbar, z.B. 0-25, 25-50); zeitaufwendiger einzustellen als ein Schieber.</li>
+                    <li><strong>Einsatzgebiet:</strong> Präzisionspassungen, Qualitätskontrolle von Drehteilen, Werkzeugbau.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- KONFIGURATION ---
+        const maxMm = 25; 
+        const pxPerMm = 20; // 1mm = 20px auf dem Bildschirm (horizontal)
+        const thimblePxPerTick = 10; // Pixel-Abstand zwischen vertikalen Strichen auf der Trommel
+        
+        const sleeveEl = document.getElementById('sleeve');
+        const thimbleWrapper = document.getElementById('thimble-wrapper');
+        const thimbleScale = document.getElementById('thimble-scale');
+        const slider = document.getElementById('fine-slider');
+        const ratchetToggle = document.getElementById('ratchet-toggle');
+        const ratchetStatus = document.getElementById('ratchet-status');
+        const resolutionSelect = document.getElementById('resolution-select');
+        const displayContainer = document.getElementById('measurement-display');
+        const trueValLabel = document.getElementById('true-val-label');
+        const mainReadoutVal = document.getElementById('main-readout-val');
+        const errorLabel = document.getElementById('error-label');
+        const explanation = document.getElementById('dynamic-explanation');
+        const readingMarker = document.getElementById('reading-marker');
+        const viewport = document.getElementById('scale-viewport');
+
+        let currentRes = 0.01;
+        let allThimbleTicks = [];
+        let sleeveVernierElements = [];
+        
+        // 1. Baue die statische Hülse (Sleeve)
+        function buildSleeve() {
+            sleeveEl.innerHTML = '<div class="datum-line" id="datum-line"></div>'; // Reset mit ID
+            
+            // Vernier Skala (Nonius) für die 0.001 mm Auflösung
+            const vernierWrapper = document.createElement('div');
+            vernierWrapper.className = 'vernier-wrapper';
+            vernierWrapper.id = 'vernier-wrapper';
+            
+            sleeveVernierElements = [];
+            // Mechanisches Detail: Auf einem Mikrometer entspricht der Abstand von 10 Noniusstrichen exakt 9 Trommelstrichen.
+            // thimblePxPerTick ist 10px, also ist der Nonius-Abstand 9 * 10 / 10 = 9px? 
+            // Halt: Um den Noniusfluchtpunkt mathematisch perfekt zu berechnen:
+            // Abstand = 1.1 * Trommelstrichabstand = 11px (Aufwärtszählend von der Bezugslinie)
+            const vernierSpacing = 11; 
+            
+            // Wir fügen auch die 0 für die Bezugslinie hinzu, damit die Skala von 0-9 komplett ist
+            for (let k = 0; k <= 9; k++) {
+                const vLabel = document.createElement('div');
+                vLabel.className = 'sleeve-vernier-label';
+                vLabel.style.top = (110 - k * vernierSpacing) + 'px';
+                vLabel.textContent = k;
+                vernierWrapper.appendChild(vLabel);
+
+                if (k > 0) {
+                    const vTick = document.createElement('div');
+                    vTick.className = 'sleeve-vernier-tick';
+                    // Die Linien gehen von der Datumslinie (110px) nach oben
+                    vTick.style.top = (110 - k * vernierSpacing) + 'px';
+                    vernierWrapper.appendChild(vTick);
+                    sleeveVernierElements.push({ tick: vTick, label: vLabel, val: k });
+                } else {
+                    // k = 0 ist die Datumslinie selbst
+                    sleeveVernierElements.push({ tick: document.getElementById('datum-line'), label: vLabel, val: k });
+                }
+            }
+            sleeveEl.appendChild(vernierWrapper);
+
+            // Hauptskala generieren (in 0.5mm Schritten)
+            for (let i = 0; i <= maxMm * 2; i++) {
+                const val = i * 0.5;
+                const posPx = val * pxPerMm;
+                
+                const tick = document.createElement('div');
+                tick.className = 'sleeve-tick';
+                tick.style.left = posPx + 'px';
+                
+                if (val % 1 === 0) {
+                    // Voller Millimeter (gehen von der Datumslinie nach oben)
+                    tick.classList.add('top');
+                    if (val % 5 === 0) tick.classList.add('top-5');
+                    
+                    const label = document.createElement('div');
+                    label.className = 'sleeve-label';
+                    label.style.left = posPx + 'px';
+                    label.textContent = val;
+                    sleeveEl.appendChild(label);
+                } else {
+                    // Halber Millimeter (gehen von der Datumslinie nach unten)
+                    tick.classList.add('bottom');
+                }
+                
+                sleeveEl.appendChild(tick);
+            }
+        }
+
+        // 2. Baue die bewegliche Trommel-Skala (Thimble)
+        function buildThimble() {
+            thimbleScale.innerHTML = '';
+            allThimbleTicks = [];
+            
+            // Wir rendern 3 volle Durchläufe (150 Striche), um endloses Scrollen durch CSS Translate zu simulieren
+            const totalLoops = 3;
+            const ticksPerLoop = 50;
+            
+            for (let i = -ticksPerLoop; i <= ticksPerLoop * 2; i++) {
+                let val = ((i % ticksPerLoop) + ticksPerLoop) % ticksPerLoop; 
+                
+                const yPosPx = i * thimblePxPerTick;
+                
+                const tick = document.createElement('div');
+                tick.className = 'thimble-tick';
+                tick.style.top = yPosPx + 'px';
+                
+                if (val % 5 === 0) {
+                    tick.classList.add('long');
+                    const label = document.createElement('div');
+                    label.className = 'thimble-label';
+                    label.style.top = yPosPx + 'px';
+                    label.textContent = val;
+                    thimbleScale.appendChild(label);
+                    
+                    allThimbleTicks.push({ tick: tick, label: label, val: val, absoluteIndex: i });
+                } else {
+                    tick.classList.add('short');
+                    allThimbleTicks.push({ tick: tick, label: null, val: val, absoluteIndex: i });
+                }
+                
+                thimbleScale.appendChild(tick);
+            }
+        }
+
+        // 3. Update Logik bei Interaktion
+        function updateMeasurement() {
+            const isRatchetOn = ratchetToggle.checked;
+            let trueVal = parseFloat(slider.value);
+            
+            // Step-Fix basierend auf Auflösung
+            trueVal = Math.round(trueVal / 0.001) * 0.001; 
+
+            // Fehler-Simulation
+            let error = 0;
+            if (!isRatchetOn) {
+                error = -0.02;
+                ratchetStatus.textContent = "Warnung: An der Trommel gedreht! Messkraft zu hoch, Bügel federt auf.";
+                ratchetStatus.style.color = "var(--accent)";
+            } else {
+                ratchetStatus.textContent = "Aktiviert: Konstante Messkraft, keine Deformation.";
+                ratchetStatus.style.color = "var(--highlight)";
+            }
+
+            let readVal = trueVal + error;
+            if (readVal < 0) readVal = 0; 
+            
+            // Werte formatieren
+            let displayTrue = currentRes === 0.01 ? trueVal.toFixed(2) : trueVal.toFixed(3);
+            let displayRead = currentRes === 0.01 ? (Math.round(readVal / 0.01) * 0.01).toFixed(2) : readVal.toFixed(3);
+            
+            // --- UI und Fehler-Status Updates ---
+            if (!isRatchetOn) {
+                displayContainer.classList.add('error-state');
+                errorLabel.style.display = 'block';
+                readingMarker.classList.add('error-marker');
+                explanation.classList.add('error-box');
+            } else {
+                displayContainer.classList.remove('error-state');
+                errorLabel.style.display = 'none';
+                readingMarker.classList.remove('error-marker');
+                explanation.classList.remove('error-box');
+            }
+
+            trueValLabel.textContent = `Wahres Bauteilmaß: ${displayTrue} mm`;
+            mainReadoutVal.textContent = `${displayRead} mm`;
+
+            // --- VISUELLE MECHANIK ---
+            
+            // 1. Horizontale Verschiebung der Trommel
+            const horizontalShift = readVal * pxPerMm;
+            const thimbleLeft = 50 + horizontalShift;
+            thimbleWrapper.style.left = thimbleLeft + 'px'; 
+            
+            // Kamera leicht mitscrollen
+            viewport.scrollLeft = Math.max(0, horizontalShift - 100);
+
+            // Dynamische Positionierung der Nonius-Labels (immer direkt links von der Trommel)
+            sleeveVernierElements.forEach(item => {
+                item.label.style.left = (horizontalShift - 22) + 'px';
+            });
+
+            // 2. Vertikale Rotation der Skala
+            const remainderInPeriod = readVal % 0.5; 
+            const tickFraction = remainderInPeriod / 0.01; 
+            const verticalShiftPx = tickFraction * thimblePxPerTick;
+            
+            thimbleScale.style.transform = `translateY(${-verticalShiftPx}px)`;
+
+            // --- HIGHLIGHTING ---
+            const datumLine = document.getElementById('datum-line');
+            datumLine.classList.remove('highlight', 'error-line');
+
+            // Zurücksetzen
+            allThimbleTicks.forEach(item => {
+                item.tick.classList.remove('highlight', 'error-line');
+                if(item.label) item.label.classList.remove('highlight-text', 'error-text');
+            });
+            sleeveVernierElements.forEach(item => {
+                item.tick.classList.remove('highlight', 'error-line');
+                if(item.label) item.label.classList.remove('highlight-text', 'error-text');
+            });
+
+            // Welcher Strich liegt exakt auf der Bezugslinie oder fluchtet mit dem Nonius?
+            let thousandths = 0;
+            let highlightedThimbleIndex;
+
+            if (currentRes === 0.001) {
+                thousandths = Math.round((readVal * 1000) % 10);
+                
+                // WICHTIGER FIX: Bei der Nonius-Ablesung ist der Basis-Trommelstrich immer 
+                // der zuletzt passierte (also abgerundet), nicht der nächstgelegene!
+                // Wir addieren +0.0001, um kleine Floating-Point Ungenauigkeiten beim Floor abzufangen.
+                const baseIndex = Math.floor(tickFraction + 0.0001); 
+                highlightedThimbleIndex = baseIndex - thousandths;
+            } else {
+                // Bei 0.01 mm Auflösung runden wir auf den Strich, der der Linie am nächsten ist
+                highlightedThimbleIndex = Math.round(tickFraction);
+            }
+
+            // Highlighte den passenden Trommelstrich
+            const tickObjToHighlight = allThimbleTicks.find(t => t.absoluteIndex === highlightedThimbleIndex);
+            
+            if (tickObjToHighlight) {
+                tickObjToHighlight.tick.classList.add('highlight');
+                if (!isRatchetOn) tickObjToHighlight.tick.classList.add('error-line');
+                
+                if (tickObjToHighlight.label) {
+                    tickObjToHighlight.label.classList.add('highlight-text');
+                    if (!isRatchetOn) tickObjToHighlight.label.classList.add('error-text');
+                }
+            }
+
+            // Highlighte Datum-Linie oder den passenden Nonius-Strich
+            if (currentRes === 0.01 || thousandths === 0) {
+                datumLine.classList.add('highlight');
+                if (!isRatchetOn) datumLine.classList.add('error-line');
+                
+                if (currentRes === 0.001) {
+                    const vObj = sleeveVernierElements.find(v => v.val === 0);
+                    if (vObj) {
+                        vObj.label.classList.add('highlight-text');
+                        if (!isRatchetOn) vObj.label.classList.add('error-text');
+                    }
+                }
+            } else if (currentRes === 0.001 && thousandths > 0) {
+                const vObj = sleeveVernierElements.find(v => v.val === thousandths);
+                if (vObj) {
+                    vObj.tick.classList.add('highlight');
+                    if (!isRatchetOn) vObj.tick.classList.add('error-line');
+                    vObj.label.classList.add('highlight-text');
+                    if (!isRatchetOn) vObj.label.classList.add('error-text');
+                }
+            }
+
+            // --- ERKLÄRUNGSTEXT BERECHNEN ---
+            const fullHalfMms = Math.floor(readVal / 0.5) * 0.5;
+            const hasHalfMark = (fullHalfMms % 1) !== 0;
+            const fullMms = Math.floor(readVal);
+            const hundredthsRead = readVal - fullHalfMms;
+
+            let explainText = `<strong>Ablese-Schritte für ${displayRead.replace('.', ',')} mm:</strong><br>`;
+            
+            if (!isRatchetOn) {
+                explainText = `<strong>FEHLER DURCH DEFORMATION:</strong> Du drückst das Bauteil mit zu viel Kraft zusammen und biegst den C-Bügel auf. Die Spindel hat sich 0,02 mm zu weit reingedreht.<br>`;
+            }
+
+            explainText += `1. Sichtbare mm-Marke auf der Hülse (oben): <strong>${fullMms} mm</strong><br>`;
+            
+            if (hasHalfMark) {
+                explainText += `2. Die untere 0,5 mm-Marke ist bereits sichtbar: <strong>+ 0,50 mm</strong><br>`;
+            } else {
+                explainText += `2. Die untere 0,5 mm-Marke ist <em>nicht</em> überschritten: <strong>+ 0,00 mm</strong><br>`;
+            }
+            
+            if (currentRes === 0.001) {
+                // Basis hundertstel aus dem gesicherten baseIndex ableiten
+                const baseIndex = Math.floor(tickFraction + 0.0001);
+                const baseHundredths = baseIndex / 100;
+                
+                explainText += `3. Letzter passierter Basiswert auf der Trommel: <strong>+ ${baseHundredths.toFixed(2).replace('.', ',')} mm</strong><br>`;
+                explainText += `4. <strong>Nonius-Strich Nr. ${thousandths}</strong> fluchtet horizontal exakt mit einem Trommelstrich: <strong style="color:var(--highlight);">+ 0,00${thousandths} mm</strong><br>`;
+            } else {
+                explainText += `3. Wert auf der Trommel an der Bezugslinie: <strong>+ ${hundredthsRead.toFixed(2).replace('.', ',')} mm</strong><br>`;
+            }
+
+            explanation.innerHTML = explainText;
+        }
+
+        // Event Listener
+        slider.addEventListener('input', updateMeasurement);
+        ratchetToggle.addEventListener('change', updateMeasurement);
+        
+        resolutionSelect.addEventListener('change', (e) => {
+            currentRes = parseFloat(e.target.value);
+            slider.step = currentRes;
+            // Zeige oder verstecke den Nonius
+            document.getElementById('vernier-wrapper').style.display = currentRes === 0.001 ? 'block' : 'none';
+            updateMeasurement();
+        });
+
+        // Initialisierung
+        buildSleeve();
+        buildThimble();
+        updateMeasurement();
+
+    </script>
+</body>
+</html>
