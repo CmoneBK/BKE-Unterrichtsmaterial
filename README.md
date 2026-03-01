@@ -2,10 +2,12 @@
 
 Dieses Repository dient als automatisches Archiv und Hosting-Plattform für interaktive Unterrichtswerkzeuge, die in **[CodePen](https://codepen.io)** erstellt wurden. Dank einer **[Make.com](https://www.make.com)**-Automation werden Pens mit nur einem Klick direkt hierher übertragen, automatisch kategorisiert und veröffentlicht.
 
-## 📖 Ausführliche Anleitungen
-Für die initiale Einrichtung oder Wartung des Systems finden Sie hier die detaillierten Schritt-für-Schritt-Anleitungen:
+## ⚡ Schnellstart & Anleitungen
+Möchten Sie dieses System für Ihren eigenen Unterricht nachbauen? Hier sind die fertigen Vorlagen und Schritt-für-Schritt-Anleitungen:
+
+* 🚀 **[Make.com Szenario mit einem Klick importieren](https://eu1.make.com/public/shared-scenario/Eghpa8gJd8q/codepen-to-github)** – Kopiert die fertige Automatisierung direkt in Ihren Account.
+* ⚙️ **[Make.com Einrichtung im Detail](Make.com-Anleitung.md)** – So passen Sie das importierte Szenario an Ihren GitHub-Account an.
 * 🔖 **[Lesezeichen (Bookmarklet) erstellen](Lesezeichen%20Erstellen.md)** – So richten Sie den Button in Ihrem Browser ein.
-* ⚙️ **[Make.com Automatisierung einrichten](Make.com-Anleitung.md)** – So bauen Sie die Schnittstelle zwischen Browser und GitHub.
 
 ## 🚀 Der Workflow
 
