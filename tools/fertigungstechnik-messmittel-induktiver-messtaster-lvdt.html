@@ -1,0 +1,935 @@
+---
+title: "Fertigungstechnik: Messmittel - Induktiver Messtaster (LVDT)"
+---
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fertigungstechnik: Messmittel - Induktiver Messtaster (LVDT)</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #e74c3c;
+            --highlight: #2980b9;
+            --steel-light: #ecf0f1;
+            --steel-mid: #bdc3c7;
+            --steel-dark: #7f8c8d;
+            --bg-dark: #eef2f5;
+            --copper-primary: #e67e22;
+            --copper-secondary: #3498db;
+            --coil-glow-1: rgba(52, 152, 219, 0);
+            --coil-glow-2: rgba(52, 152, 219, 0);
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--primary);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 1000px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        h1.main-title {
+            text-align: center;
+            color: var(--primary);
+            margin-top: 0;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+            padding-bottom: 15px;
+            border-bottom: 3px solid var(--primary);
+            letter-spacing: 1px;
+        }
+        .header-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #ecf0f1;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .readout {
+            font-size: 2.5em;
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--highlight);
+            font-weight: bold;
+            background: #eaf2f8;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #d4e6f1;
+            min-width: 250px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: all 0.1s;
+        }
+        .readout.error-state {
+            color: var(--accent);
+            border-color: var(--accent);
+            background: #fdedec;
+            text-shadow: 0 0 5px rgba(231, 76, 60, 0.3);
+        }
+        .readout-true-val {
+            font-size: 0.35em;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        .readout-error-label {
+            font-size: 0.35em;
+            color: var(--accent);
+            margin-top: 5px;
+            font-weight: normal;
+        }
+        .settings {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-grow: 1;
+        }
+        select {
+            padding: 12px;
+            font-size: 1.1em;
+            border-radius: 6px;
+            border: 1px solid var(--steel-mid);
+            background: var(--steel-light);
+            cursor: pointer;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        /* --- LVDT GRAFIK --- */
+        .lvdt-viewport {
+            position: relative;
+            width: 100%;
+            min-height: 520px;
+            height: auto;
+            padding: 20px 0;
+            background: #ffffff;
+            border: 2px solid var(--steel-mid);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: inset 0 5px 15px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-sizing: border-box;
+            background-image: linear-gradient(90deg, transparent 95%, #f1f2f6 95%);
+            background-size: 20px 20px;
+        }
+        
+        /* Signal Visualizer (Rechts) */
+        .signal-panel {
+            width: 300px;
+            background: var(--bg-dark);
+            border: 1px solid var(--steel-mid);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 10;
+        }
+        .signal-bar-container {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .signal-label {
+            font-size: 0.85em;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+        .signal-track {
+            width: 100%;
+            height: 12px;
+            background: var(--steel-mid);
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+        .signal-fill {
+            height: 100%;
+            width: 50%;
+            background: var(--copper-secondary);
+            transition: width 0.1s ease-out, background-color 0.1s;
+        }
+        .signal-fill.primary { background: var(--copper-primary); width: 100%; }
+        .signal-fill.diff { background: var(--highlight); width: 50%; transform-origin: left; }
+
+        /* Oszilloskop */
+        .oscilloscope-box {
+            margin-top: 5px;
+            background: #2c3e50;
+            border-radius: 6px;
+            padding: 10px;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+        .oscilloscope-box canvas {
+            width: 100%;
+            height: 120px;
+            background: #1a252f;
+            border-radius: 4px;
+            display: block;
+        }
+        .oszi-legend {
+            display: flex;
+            justify-content: space-around;
+            font-size: 0.7em;
+            color: #ecf0f1;
+            margin-top: 8px;
+            font-weight: bold;
+        }
+        .legend-dot { 
+            display: inline-block; 
+            width: 8px; 
+            height: 8px; 
+            border-radius: 50%; 
+            margin-right: 4px; 
+        }
+
+        /* Messverstärker (Rechenbox) */
+        .calc-box {
+            background: #34495e;
+            color: #ecf0f1;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85em;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.4);
+            border-left: 4px solid var(--highlight);
+            transition: border-color 0.2s;
+        }
+        .calc-box.error {
+            border-left-color: var(--accent);
+        }
+        .calc-title {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 0.8em;
+            color: #bdc3c7;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+        .calc-step {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .calc-result {
+            border-top: 1px dashed #7f8c8d;
+            padding-top: 6px;
+            margin-top: 6px;
+            font-weight: bold;
+            color: var(--highlight);
+            font-size: 1.1em;
+            transition: color 0.2s;
+        }
+        .calc-box.error .calc-result {
+            color: #ff7675;
+        }
+
+        /* LVDT Mechanik (Links/Mitte) */
+        .sensor-system {
+            position: relative;
+            width: 200px;
+            height: 380px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        /* Das Gehäuse und die Spulen - Jetzt als halbdurchsichtige "Glas"-Röhre */
+        .housing {
+            position: absolute;
+            top: 20px;
+            width: 80px;
+            height: 180px;
+            /* Semi-transparentes Röhren-Design */
+            background: linear-gradient(to right, rgba(236, 240, 241, 0.4) 0%, rgba(255, 255, 255, 0.7) 20%, rgba(236, 240, 241, 0.3) 80%, rgba(189, 195, 199, 0.5) 100%);
+            border: 1px solid rgba(127, 140, 141, 0.6);
+            border-radius: 6px;
+            z-index: 5; /* Liegt VOR dem Kern */
+            display: flex;
+            flex-direction: column;
+            padding: 10px 0;
+            box-sizing: border-box;
+            gap: 0;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1), 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        /* Spulen mit 3D Zylinder-Effekt und Transparenz */
+        .coil {
+            position: relative;
+            width: 100%;
+            border-top: 1px solid rgba(0,0,0,0.4);
+            border-bottom: 1px solid rgba(0,0,0,0.4);
+            transition: box-shadow 0.1s;
+            box-sizing: border-box;
+        }
+        /* Der Pseudo-Layer erzeugt einen glänzenden 3D Lichteffekt über den Wicklungen */
+        .coil::after {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background: linear-gradient(to right, rgba(0,0,0,0.3) 0%, rgba(255,255,255,0.4) 25%, rgba(255,255,255,0) 60%, rgba(0,0,0,0.4) 100%);
+            pointer-events: none;
+        }
+
+        .coil.secondary-1 {
+            height: 50px;
+            /* RGBA Farben erlauben den Blick auf den dahinterliegenden Kern */
+            background: repeating-linear-gradient(0deg, rgba(41, 128, 185, 0.7), rgba(41, 128, 185, 0.7) 3px, rgba(44, 62, 80, 0.4) 3px, rgba(44, 62, 80, 0.4) 4px);
+            box-shadow: 0 0 15px var(--coil-glow-1);
+        }
+        .coil.primary {
+            height: 60px;
+            background: repeating-linear-gradient(0deg, rgba(211, 84, 0, 0.75), rgba(211, 84, 0, 0.75) 3px, rgba(44, 62, 80, 0.4) 3px, rgba(44, 62, 80, 0.4) 4px);
+            box-shadow: 0 0 15px rgba(230, 126, 34, 0.6);
+        }
+        .coil.secondary-2 {
+            height: 50px;
+            background: repeating-linear-gradient(0deg, rgba(41, 128, 185, 0.7), rgba(41, 128, 185, 0.7) 3px, rgba(44, 62, 80, 0.4) 3px, rgba(44, 62, 80, 0.4) 4px);
+            box-shadow: 0 0 15px var(--coil-glow-2);
+        }
+
+        /* Beweglicher Anker/Kern */
+        .core-assembly {
+            position: absolute;
+            top: 55px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 4; /* HINTER dem gläsernen Gehäuse und den Spulen platziert! */
+            transition: transform 0.1s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .magnetic-core {
+            width: 30px;
+            height: 110px;
+            /* 3D Metallischer Zylinder-Farbverlauf */
+            background: linear-gradient(to right, #2c3e50 0%, #7f8c8d 20%, #ecf0f1 50%, #7f8c8d 80%, #1a252f 100%);
+            border: 1px solid #1a252f;
+            border-radius: 4px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+        }
+        .probe-shaft {
+            width: 6px;
+            height: 120px;
+            /* 3D Runder Stangeneffekt */
+            background: linear-gradient(to right, #7f8c8d 0%, #bdc3c7 20%, #ffffff 50%, #bdc3c7 80%, #34495e 100%);
+            border-left: 1px solid #34495e;
+            border-right: 1px solid #34495e;
+        }
+        .probe-tip {
+            width: 14px;
+            height: 14px;
+            background: radial-gradient(circle at 30% 30%, #ff7675, #d63031);
+            border-radius: 50%;
+            margin-top: -2px;
+            box-shadow: inset -2px -2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* Werkstück */
+        .workpiece-assembly {
+            position: absolute;
+            top: 297px; 
+            width: 160px;
+            height: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.1s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .workpiece-surface {
+            width: 100%;
+            height: 40px;
+            background: repeating-linear-gradient(45deg, #95a5a6, #95a5a6 10px, #7f8c8d 10px, #7f8c8d 20px);
+            border-top: 3px solid #34495e;
+            border-radius: 4px 4px 0 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Messlinien zur Verdeutlichung */
+        .datum-line-center {
+            position: absolute;
+            top: 110px; /* Exakte Mitte der Primärspule */
+            width: 100%;
+            height: 1px;
+            background: rgba(44, 62, 80, 0.3);
+            border-top: 1px dashed var(--primary);
+            z-index: 1;
+        }
+
+        /* --- STEUERUNG --- */
+        .controls {
+            margin-top: 25px;
+            padding: 20px;
+            background: var(--steel-light);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            height: 8px;
+            background: var(--steel-mid);
+            border-radius: 4px;
+            outline: none;
+        }
+        
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--steel-mid);
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider-toggle {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--steel-dark);
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider-toggle:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider-toggle {
+            background-color: var(--accent);
+        }
+        input:checked + .slider-toggle:before {
+            transform: translateX(26px);
+        }
+
+        .explanation {
+            background: white;
+            padding: 15px;
+            border-left: 5px solid var(--highlight);
+            border-radius: 4px;
+            font-size: 1.05em;
+            line-height: 1.5;
+        }
+        .explanation.error-box {
+            border-left-color: var(--accent);
+            background: #fdedec;
+        }
+
+        /* --- THEORIE GRID --- */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .info-card {
+            background: #ffffff;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .info-card h3 {
+            margin-top: 0;
+            color: #2980b9;
+            font-size: 1.2em;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+        .info-card ul {
+            padding-left: 20px;
+            margin-bottom: 0;
+        }
+        .info-card li {
+            margin-bottom: 8px;
+        }
+        .badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .badge.warning { background: var(--accent); }
+        .badge.success { background: var(--highlight); }
+        .badge.electric { background: #8e44ad; }
+        
+        @media (max-width: 768px) {
+            .info-grid { grid-template-columns: 1fr; }
+            .lvdt-viewport { flex-direction: column; height: auto; padding: 20px 0; gap: 20px; }
+            .sensor-system { height: 320px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1 class="main-title">Messmittel - Induktiver Messtaster (LVDT)</h1>
+        
+        <div class="header-panel">
+            <div class="settings">
+                <label for="resolution-select"><strong>Auswerte-Elektronik / Auflösung:</strong></label>
+                <select id="resolution-select">
+                    <option value="0.001">1 µm (0,001 mm) - Standard Messverstärker</option>
+                    <option value="0.0001">0,1 µm (0,0001 mm) - Hochpräzisions-Messverstärker</option>
+                </select>
+            </div>
+            <div class="readout" id="measurement-display">
+                <span class="readout-true-val" id="true-val-label">Wahres Maß: 0.0000 mm</span>
+                <span id="main-readout-val">0.000 mm</span>
+                <span class="readout-error-label" id="error-label" style="display:none;">(EMV-Interferenz! Signal gestört)</span>
+            </div>
+        </div>
+
+        <div class="lvdt-viewport" id="scale-viewport">
+            
+            <div class="datum-line-center"></div>
+
+            <!-- Mechanische Sensor Darstellung -->
+            <div class="sensor-system">
+                <!-- Gehäuse & Spulen (3D Semi-Transparent) -->
+                <div class="housing">
+                    <div class="coil secondary-1" id="coil-s1" title="Sekundärspule 1 (Oben)"></div>
+                    <div class="coil primary" title="Primärspule (Einspeisung)"></div>
+                    <div class="coil secondary-2" id="coil-s2" title="Sekundärspule 2 (Unten)"></div>
+                </div>
+                
+                <!-- Beweglicher Kern & Taster (Liegt im Z-Index nun HINTER/IN den Spulen) -->
+                <div class="core-assembly" id="core-assembly">
+                    <div class="magnetic-core"></div>
+                    <div class="probe-shaft"></div>
+                    <div class="probe-tip"></div>
+                </div>
+
+                <!-- Simuliertes Bauteil/Werkstück -->
+                <div class="workpiece-assembly" id="workpiece">
+                    <div class="workpiece-surface"></div>
+                </div>
+            </div>
+
+            <!-- Signal Visualisierung -->
+            <div class="signal-panel">
+                <div class="signal-bar-container">
+                    <div class="signal-label">
+                        <span>Primärspule (U_p)</span>
+                        <span>10.0 V~</span>
+                    </div>
+                    <div class="signal-track">
+                        <div class="signal-fill primary"></div>
+                    </div>
+                </div>
+                <hr style="width: 100%; border: 0; border-top: 1px solid var(--steel-mid);">
+                <div class="signal-bar-container">
+                    <div class="signal-label">
+                        <span style="color: var(--copper-secondary)">Sekundär 1 (U_s1)</span>
+                        <span id="val-s1">5.00 V</span>
+                    </div>
+                    <div class="signal-track">
+                        <div class="signal-fill" id="bar-s1" style="width: 50%;"></div>
+                    </div>
+                </div>
+                <div class="signal-bar-container">
+                    <div class="signal-label">
+                        <span style="color: var(--copper-secondary)">Sekundär 2 (U_s2)</span>
+                        <span id="val-s2">5.00 V</span>
+                    </div>
+                    <div class="signal-track">
+                        <div class="signal-fill" id="bar-s2" style="width: 50%;"></div>
+                    </div>
+                </div>
+                <hr style="width: 100%; border: 0; border-top: 1px solid var(--steel-mid);">
+                <div class="signal-bar-container">
+                    <div class="signal-label">
+                        <strong style="color: var(--highlight)">Differenz (ΔU)</strong>
+                        <strong id="val-diff">0.000 V</strong>
+                    </div>
+                    <div class="signal-track" style="background: #dfe6e9; display: flex; justify-content: center;">
+                        <div style="width: 100%; height: 100%; position: relative;">
+                            <div class="signal-fill diff" id="bar-diff" style="position: absolute; left: 50%; width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Echtzeit-Oszilloskop -->
+                <div class="oscilloscope-box" title="Echtzeit-Wechselspannungen">
+                    <canvas id="oszi-canvas" width="260" height="120"></canvas>
+                    <div class="oszi-legend">
+                        <span><span class="legend-dot" style="background:var(--copper-primary)"></span> U_p</span>
+                        <span><span class="legend-dot" style="background:var(--copper-secondary)"></span> U_s1</span>
+                        <span><span class="legend-dot" style="background:#9b59b6"></span> U_s2</span>
+                        <span><span class="legend-dot" style="background:var(--highlight)"></span> ΔU</span>
+                    </div>
+                </div>
+
+                <!-- NEU: Rechenbox Messverstärker -->
+                <div class="calc-box" id="calc-box" title="A/D-Wandlung & Skalierung im Messverstärker">
+                    <div class="calc-title">Auswertung (A/D-Wandler)</div>
+                    <div class="calc-step">
+                        <span>Eingang (ΔU):</span>
+                        <span id="calc-in">+0.000 V</span>
+                    </div>
+                    <div class="calc-step">
+                        <span>Sensitivität (k):</span>
+                        <span>&divide; 2.500 V/mm</span>
+                    </div>
+                    <div class="calc-result calc-step">
+                        <span>Ausgabe (Weg):</span>
+                        <span id="calc-out">+0.000 mm</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="controls">
+            <div class="slider-group">
+                <label for="fine-slider"><strong>Wahres Bauteilmaß (Auslenkung: -1.0000 mm bis +1.0000 mm):</strong></label>
+                <!-- Startwert -->
+                <input type="range" id="fine-slider" min="-1" max="1" step="0.0001" value="0.0000">
+            </div>
+
+            <div class="toggle-container">
+                <label class="switch">
+                    <input type="checkbox" id="emv-toggle">
+                    <span class="slider-toggle"></span>
+                </label>
+                <div>
+                    <strong>EMV-Störfeld aktivieren</strong><br>
+                    <small id="emv-status" style="color: var(--steel-dark);">Deaktiviert: Signal ist stabil und rauschfrei.</small>
+                </div>
+            </div>
+            
+            <div class="explanation" id="dynamic-explanation"></div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-card">
+                <span class="badge electric">ELEKTRISCH (Kontaktierend - Induktiv)</span>
+                <h3>Prinzip & Auflösung</h3>
+                <ul>
+                    <li><strong>Werkzeug:</strong> Induktiver Messtaster (LVDT - Linear Variable Differential Transformer)</li>
+                    <li><strong>Prinzip:</strong> Elektromagnetische Kopplung. Ein Wechselstrom in der Primärspule induziert Spannungen in zwei gegenläufig geschalteten Sekundärspulen.</li>
+                    <li><strong>Auflösung:</strong> 0,001 mm – 0,0001 mm (1 µm bis 0,1 µm)</li>
+                    <li><strong>Technik:</strong> Ein verschiebbarer weichmagnetischer Kern (nun visuell in den Spulen) verändert die Kopplung. Die Differenz der induzierten Spannungen (U<sub>s1</sub> - U<sub>s2</sub>) ist extrem linear zur mechanischen Auslenkung.</li>
+                </ul>
+            </div>
+            <div class="info-card">
+                <span class="badge success">VORTEILE</span>
+                <span class="badge warning">NACHTEILE</span>
+                <h3>Eigenschaften & Einsatz</h3>
+                <ul>
+                    <li><strong>Vorteil:</strong> Reibungsfreies Prinzip im Spulensystem (Kern schwebt oft berührungslos), daher extrem verschleißarm.</li>
+                    <li><strong>Vorteil:</strong> Liefert direkt ein stufenloses analoges/elektrisches Signal, perfekt für automatisierte QS-Systeme.</li>
+                    <li><strong>Nachteil:</strong> Erfordert weiterhin physischen Kontakt der Tastspitze zum Bauteil; kann empfindlich auf elektromagnetische Störungen (EMV) in der Werkstattumgebung reagieren.</li>
+                    <li><strong>Einsatzgebiet:</strong> Automatisierte Mehrstellenmessvorrichtungen, Endkontrolle in der Serienfertigung.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM ELEMENTE ---
+        const slider = document.getElementById('fine-slider');
+        const emvToggle = document.getElementById('emv-toggle');
+        const resolutionSelect = document.getElementById('resolution-select');
+        const displayContainer = document.getElementById('measurement-display');
+        const trueValLabel = document.getElementById('true-val-label');
+        const mainReadoutVal = document.getElementById('main-readout-val');
+        const errorLabel = document.getElementById('error-label');
+        const emvStatus = document.getElementById('emv-status');
+        const explanation = document.getElementById('dynamic-explanation');
+        
+        // Visuals
+        const coreAssembly = document.getElementById('core-assembly');
+        const workpiece = document.getElementById('workpiece');
+        const coilS1 = document.getElementById('coil-s1');
+        const coilS2 = document.getElementById('coil-s2');
+        const valS1 = document.getElementById('val-s1');
+        const valS2 = document.getElementById('val-s2');
+        const valDiff = document.getElementById('val-diff');
+        const barS1 = document.getElementById('bar-s1');
+        const barS2 = document.getElementById('bar-s2');
+        const barDiff = document.getElementById('bar-diff');
+        
+        // Rechenbox Elemente
+        const calcBox = document.getElementById('calc-box');
+        const calcIn = document.getElementById('calc-in');
+        const calcOut = document.getElementById('calc-out');
+        
+        // Oszilloskop Setup
+        const osziCanvas = document.getElementById('oszi-canvas');
+        const osziCtx = osziCanvas.getContext('2d');
+
+        // Konstanten
+        const MAX_PHYSICAL_MM = 1.0; 
+        const PX_PER_MM = 15; // Hub passend zum 110px Kern, damit er im linearen Bereich bleibt
+        const BASE_VOLTAGE = 5.0; // Volt bei Nullstellung (pro Sekundärspule)
+        const VOLT_PER_MM = 2.5;  // Spannungsänderung pro mm Auslenkung (Empfindlichkeit k)
+
+        // State
+        let currentRes = 0.001;
+        let animationFrameId;
+        let emvNoiseOffset = 0;
+        let osziTime = 0;
+        
+        // Globale Spannungs-Werte für das Oszilloskop
+        let currentV1 = 5.0;
+        let currentV2 = 5.0;
+        let currentVDiff = 0.0;
+
+        // --- HAUPT UPDATE FUNKTION ---
+        function calculateAndRender() {
+            let trueVal = parseFloat(slider.value);
+            const isEmvOn = emvToggle.checked;
+
+            // Optionales Rauschen erzeugen, wenn EMV aktiv ist
+            if (isEmvOn) {
+                emvNoiseOffset = (Math.random() - 0.5) * 0.0100;
+            } else {
+                emvNoiseOffset = 0;
+            }
+
+            // Gemessener Wert beinhaltet physisches Maß + EMV Rauschen
+            let rawMeasuredVal = trueVal + emvNoiseOffset;
+
+            // Rundung basierend auf der Auflösung des virtuellen Messverstärkers
+            let displayRead = Math.round(rawMeasuredVal / currentRes) * currentRes;
+            
+            // Formatierung für Anzeige
+            const decimals = currentRes === 0.001 ? 3 : 4;
+            const displayTrueText = (trueVal > 0 ? "+" : "") + trueVal.toFixed(4) + " mm";
+            const displayReadText = (displayRead > 0 && displayRead !== 0 ? "+" : "") + displayRead.toFixed(decimals) + " mm";
+
+            // UI Updates - Texte
+            trueValLabel.textContent = `Wahres Maß: ${displayTrueText}`;
+            mainReadoutVal.textContent = displayReadText;
+
+            // UI Updates - Status/Farben
+            if (isEmvOn) {
+                displayContainer.classList.add('error-state');
+                errorLabel.style.display = 'block';
+                emvStatus.textContent = "Aktiviert: Elektromagnetische Felder verfälschen die induzierten Spannungen!";
+                emvStatus.style.color = "var(--accent)";
+                explanation.classList.add('error-box');
+                calcBox.classList.add('error');
+            } else {
+                displayContainer.classList.remove('error-state');
+                errorLabel.style.display = 'none';
+                emvStatus.textContent = "Deaktiviert: Signal ist stabil und rauschfrei.";
+                emvStatus.style.color = "var(--steel-dark)";
+                explanation.classList.remove('error-box');
+                calcBox.classList.remove('error');
+            }
+
+            // --- PHYSIK & VISUALISIERUNG ---
+            
+            // 1. Mechanische Positionierung
+            // Negativer TransformY Wert bedeutet Verschiebung nach Oben in CSS.
+            // Positives Maß = Bauteil dicker = Taster wird nach oben geschoben.
+            const displacementPx = -trueVal * PX_PER_MM;
+            coreAssembly.style.transform = `translateY(${displacementPx}px)`;
+            workpiece.style.transform = `translateY(${displacementPx}px)`;
+
+            // 2. Elektrische Spannungen Berechnen
+            currentV1 = BASE_VOLTAGE + (rawMeasuredVal * VOLT_PER_MM);
+            currentV2 = BASE_VOLTAGE - (rawMeasuredVal * VOLT_PER_MM);
+            currentVDiff = currentV1 - currentV2;
+
+            // Begrenzungen für visuelle Balken (0 bis 10V)
+            const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
+            let p1 = clamp((currentV1 / 10) * 100, 0, 100);
+            let p2 = clamp((currentV2 / 10) * 100, 0, 100);
+
+            // Signal Werte updaten
+            valS1.textContent = currentV1.toFixed(2) + " V";
+            valS2.textContent = currentV2.toFixed(2) + " V";
+            valDiff.textContent = (currentVDiff > 0 ? "+" : "") + currentVDiff.toFixed(3) + " V";
+
+            // Update der Rechenbox im Messverstärker
+            calcIn.textContent = (currentVDiff > 0 ? "+" : "") + currentVDiff.toFixed(3) + " V";
+            calcOut.textContent = displayReadText;
+
+            barS1.style.width = `${p1}%`;
+            barS2.style.width = `${p2}%`;
+
+            // Differenz-Balken (wächst aus der Mitte)
+            const maxDiffV = 2 * MAX_PHYSICAL_MM * VOLT_PER_MM; 
+            let diffPercent = (Math.abs(currentVDiff) / maxDiffV) * 50; 
+            
+            barDiff.style.width = `${diffPercent}%`;
+            if (currentVDiff >= 0) {
+                barDiff.style.left = '50%';
+                barDiff.style.transform = 'none';
+                barDiff.style.background = 'var(--highlight)';
+            } else {
+                barDiff.style.left = '50%';
+                barDiff.style.transform = 'translateX(-100%)'; // Spiegeln nach links
+                barDiff.style.background = '#d35400';
+            }
+
+            // 3. Spulen-Leuchten (Glow) basierend auf der berechneten Spannung (Koppelung)
+            const glow1Alpha = clamp(p1 / 100, 0.1, 0.9);
+            const glow2Alpha = clamp(p2 / 100, 0.1, 0.9);
+            
+            document.documentElement.style.setProperty('--coil-glow-1', `rgba(52, 152, 219, ${glow1Alpha})`);
+            document.documentElement.style.setProperty('--coil-glow-2', `rgba(52, 152, 219, ${glow2Alpha})`);
+
+            // --- ERKLÄRUNGSTEXT BERECHNEN ---
+            let explainText = "";
+            if (isEmvOn) {
+                explainText = `<strong>STÖRUNG:</strong> Externe elektromagnetische Wechselfelder induzieren Störspannungen in die Spulen (sichtbar als hochfrequentes Rauschen im Oszilloskop). Der Messverstärker interpretiert dies fälschlicherweise als mechanische Bewegung.<br><br>`;
+            } else {
+                explainText = `<strong>Signalverarbeitung (siehe Oszilloskop & Auswertung):</strong><br>`;
+            }
+
+            if (Math.abs(trueVal) < 0.0005) {
+                explainText += `Der Ferritkern steht exakt in der <strong>elektrischen Mitte</strong> (Nullpunkt).<br>`;
+                explainText += `&rarr; Spule 1 (${currentV1.toFixed(2)}V) und Spule 2 (${currentV2.toFixed(2)}V) empfangen exakt gleich viel Magnetfluss.<br>`;
+                explainText += `&rarr; Die Differenzschaltung hebt beide Spannungen auf: <strong>ΔU = 0 V</strong> (Flache Linie im Oszilloskop). Der Verstärker rechnet: 0 V / 2,5 = 0,000 mm.`;
+            } else if (trueVal > 0) {
+                explainText += `Der Taster ist um <strong>${trueVal.toFixed(4)} mm nach oben</strong> ausgelenkt.<br>`;
+                explainText += `&rarr; Der Kern schiebt sich physisch tiefer in die obere Spule (S1). Die induzierte Amplitude U_s1 (${currentV1.toFixed(2)}V) steigt, U_s2 (${currentV2.toFixed(2)}V) fällt ab.<br>`;
+                explainText += `&rarr; Die Differenzspannung (<strong>ΔU = +${currentVDiff.toFixed(3)} V</strong>) wird vom Verstärker durch den Sensorfaktor geteilt und als positiver Wert auf dem Display ausgegeben.`;
+            } else {
+                explainText += `Der Taster ist um <strong>${Math.abs(trueVal).toFixed(4)} mm nach unten</strong> ausgefahren.<br>`;
+                explainText += `&rarr; Der Kern koppelt stärker in die untere Spule (S2). U_s2 (${currentV2.toFixed(2)}V) wird größer als U_s1 (${currentV1.toFixed(2)}V).<br>`;
+                explainText += `&rarr; Die Differenzschaltung kippt ins Negative (<strong>ΔU = ${currentVDiff.toFixed(3)} V</strong>). Im Oszilloskop siehst du, wie die Phase des Differenzsignals um <strong>180° springt</strong>!`;
+            }
+
+            explanation.innerHTML = explainText;
+        }
+
+        // --- OSZILLOSKOP RENDERER ---
+        function drawOscilloscope() {
+            osziCtx.clearRect(0, 0, osziCanvas.width, osziCanvas.height);
+            
+            // Hintergrund-Raster zeichnen
+            osziCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            osziCtx.lineWidth = 1;
+            osziCtx.beginPath();
+            for(let i=0; i<osziCanvas.height; i+=20) { osziCtx.moveTo(0, i); osziCtx.lineTo(osziCanvas.width, i); }
+            for(let i=0; i<osziCanvas.width; i+=20) { osziCtx.moveTo(i, 0); osziCtx.lineTo(i, osziCanvas.height); }
+            osziCtx.stroke();
+
+            const cy = osziCanvas.height / 2;
+            const w = osziCanvas.width;
+            
+            // Skalierung: 10V (Peak) entsprechen ca. 45 Pixel Auslenkung
+            const scale = 4.5; 
+            const speed = 0.12;
+            const freq = 0.06;
+            const isEmvOn = emvToggle.checked;
+
+            // Helfer-Funktion für Wellen
+            const drawWave = (amplitude, color, isDiff = false) => {
+                osziCtx.strokeStyle = color;
+                osziCtx.lineWidth = isDiff ? 2.5 : 1.5;
+                osziCtx.beginPath();
+                for(let x=0; x<w; x++) {
+                    // Die Sinus-Welle. Bei negativer Amplitude dreht sich die Phase automatisch um 180°!
+                    let y = cy - Math.sin(osziTime + x * freq) * (amplitude * scale);
+                    
+                    // EMV Rauschen nur auf die Sekundär- und Differenzsignale (Sensor) addieren
+                    if (isEmvOn && amplitude !== 10) {
+                        y += (Math.random() - 0.5) * 12; // Hochfrequentes Rauschen
+                    }
+                    
+                    x === 0 ? osziCtx.moveTo(x, y) : osziCtx.lineTo(x, y);
+                }
+                osziCtx.stroke();
+            };
+
+            // 1. Primärspannung (konstant 10V Amplitude)
+            drawWave(10, '#e67e22'); 
+            
+            // 2. Sekundärspannungen
+            drawWave(currentV1, '#3498db');
+            drawWave(currentV2, '#9b59b6');
+            
+            // 3. Differenzspannung (Das eigentliche Messsignal)
+            drawWave(currentVDiff, '#2980b9', true);
+
+            osziTime += speed;
+        }
+
+        // --- ANIMATIONS LOOP ---
+        function renderLoop() {
+            if (emvToggle.checked) {
+                calculateAndRender();
+            }
+            drawOscilloscope();
+            animationFrameId = requestAnimationFrame(renderLoop);
+        }
+
+        // --- EVENT LISTENERS ---
+        slider.addEventListener('input', calculateAndRender);
+        
+        emvToggle.addEventListener('change', () => {
+            calculateAndRender(); 
+        });
+        
+        resolutionSelect.addEventListener('change', (e) => {
+            currentRes = parseFloat(e.target.value);
+            slider.step = currentRes;
+            calculateAndRender();
+        });
+
+        // Initialisierung
+        calculateAndRender();
+        renderLoop(); 
+
+    </script>
+</body>
+</html>
