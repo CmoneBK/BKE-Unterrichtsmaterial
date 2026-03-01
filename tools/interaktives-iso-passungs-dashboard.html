@@ -1,0 +1,455 @@
+---
+title: "Interaktives ISO-Passungs-Dashboard"
+---
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interaktives ISO-Passungs-Dashboard</title>
+    <style>
+        :root {
+            --primary: #0056b3;
+            --bohrung-color: #01579b;
+            --bohrung-bg: #f0f8ff;
+            --bohrung-border: #3498db;
+            --welle-color: #e65100;
+            --welle-bg: #fffaf5;
+            --welle-border: #e67e22;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --mitte-color: #2c3e50;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--bg-color); 
+            margin: 0; 
+            padding: 20px; 
+            color: var(--text-main); 
+        }
+
+        .container { 
+            max-width: 1400px; 
+            margin: auto; 
+            background: var(--card-bg); 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08); 
+        }
+
+        h1 { 
+            color: var(--primary); 
+            text-align: center; 
+            border-bottom: 3px solid var(--primary); 
+            padding-bottom: 15px; 
+            margin-top: 0;
+            margin-bottom: 30px; 
+            font-size: 2.2em;
+        }
+
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr; 
+            gap: 30px;
+        }
+
+        .input-column { display: flex; flex-direction: column; gap: 20px; }
+        .graphic-column { display: flex; flex-direction: column; }
+
+        .nennmass-section {
+            background: #eef2f5; padding: 20px; border-radius: 8px;
+            border: 1px solid #cdd5db; text-align: center; font-size: 1.2em;
+        }
+        .nennmass-section input {
+            font-size: 1.1em; width: 120px; padding: 8px; margin-left: 10px; border: 2px solid #b0bec5;
+        }
+
+        .box { border: 2px solid #ddd; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+        .bohrung { border-color: var(--bohrung-border); background-color: var(--bohrung-bg); }
+        .welle { border-color: var(--welle-border); background-color: var(--welle-bg); }
+
+        h2 { margin-top: 0; color: #004080; font-size: 1.4em; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 10px; }
+
+        .formula-group { margin: 15px 0 0 0; }
+        .formula-group p { margin: 10px 0; font-size: 1.05em; }
+        .formula { background: rgba(255,255,255,0.7); padding: 4px 8px; border-radius: 4px; font-family: 'Consolas', monospace; font-weight: bold; border: 1px solid rgba(0,0,0,0.1); }
+
+        input[type="number"] { width: 100px; padding: 8px; margin: 5px; border: 1px solid #ccc; border-radius: 6px; font-size: 1em; transition: border-color 0.3s; }
+        input[type="number"]:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 5px rgba(0,86,179,0.3); }
+        input[type="number"]:hover { cursor: ns-resize; }
+
+        .result-val { font-weight: bold; color: #d35400; font-size: 1.15em; background: #fff; padding: 2px 6px; border-radius: 4px; }
+        .mitte-val { color: var(--mitte-color); } 
+
+        /* Grafische Simulation */
+        .simulation-area { 
+            flex-grow: 1; border: 2px solid #dce1e6; padding: 20px; border-radius: 12px; 
+            background: #ffffff; display: flex; flex-direction: column; position: relative;
+        }
+        
+        .sim-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px dashed #eee; padding-bottom: 10px; }
+        .sim-title { color: var(--text-muted); font-weight: bold; font-size: 1.1em; text-transform: uppercase; letter-spacing: 1px; margin: 0; }
+        
+        .toggle-btn {
+            background: #eef2f5; padding: 8px 12px; border-radius: 6px; border: 1px solid #cdd5db;
+            cursor: pointer; font-weight: bold; color: var(--primary); font-size: 0.9em; display: flex; align-items: center; gap: 8px;
+            transition: background 0.2s;
+        }
+        .toggle-btn:hover { background: #e2e8ed; }
+
+        .visualizer { 
+            flex-grow: 1; display: flex; align-items: flex-end; justify-content: center; gap: 70px;
+            position: relative; border-bottom: 3px solid var(--text-main); padding-bottom: 10px; 
+            min-height: 500px; margin-left: 60px; overflow: hidden; 
+        }
+
+        .cad-background {
+            position: absolute; inset: 0; bottom: 10px;
+            z-index: 1; pointer-events: none;
+            opacity: 0; transition: opacity 0.3s ease-in-out;
+        }
+        .cad-background.active { opacity: 1; }
+
+        .bg-layer { position: absolute; left: 0; width: 100%; transition: all 0.1s ease-out; }
+        .bg-bohrung { top: 0; background-color: rgba(52, 152, 219, 0.2); border-bottom: 2px dashed rgba(52, 152, 219, 0.8); }
+        .bg-welle { bottom: 0; background-color: rgba(230, 126, 34, 0.2); border-top: 2px dashed rgba(230, 126, 34, 0.8); }
+
+        /* Toleranzbalken (Vordergrund) */
+        .tol-bar { 
+            width: 120px; border: 2px solid var(--text-main); position: relative; border-radius: 4px 4px 0 0; 
+            text-align: center; display: flex; align-items: center; justify-content: center; 
+            font-weight: bold; flex-direction: column; transition: all 0.1s ease-out; 
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.15); z-index: 5;
+        }
+        .tol-bar span { font-size: 1em; margin: 4px 0; background: rgba(255,255,255,0.9); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); position: relative; z-index: 6; }
+        
+        .bohrung-bar { background: repeating-linear-gradient(45deg, #b3e5fc, #b3e5fc 12px, #81d4fa 12px, #81d4fa 24px); border-color: var(--bohrung-color); color: var(--bohrung-color); }
+        .welle-bar { background: repeating-linear-gradient(45deg, #ffcc80, #ffcc80 12px, #ffb74d 12px, #ffb74d 24px); border-color: var(--welle-color); color: var(--welle-color); }
+        
+        /* Fertigungsmaß / Mitte der Toleranzzone in der Grafik */
+        .fertigungs-linie {
+            position: absolute;
+            top: 50%; 
+            left: -15px;
+            right: -15px;
+            border-top: 2px dashed var(--mitte-color);
+            z-index: 5;
+            pointer-events: none;
+        }
+        .fertigungs-label {
+            position: absolute;
+            right: -65px;
+            top: -12px;
+            font-size: 0.85em !important;
+            font-family: monospace;
+            background: #fff !important;
+            border: 2px solid var(--mitte-color) !important;
+            color: var(--mitte-color);
+            padding: 2px 5px !important;
+            border-radius: 4px;
+        }
+
+        .scale-line { position: absolute; left: -80px; width: calc(100% + 80px); border-top: 1px dashed #cfd8dc; pointer-events: none; z-index: 2; }
+        .scale-label { position: absolute; left: 0; transform: translateY(-50%); font-size: 0.9em; color: var(--text-muted); font-family: monospace; }
+        .zero-line { border-top: 3px solid #e74c3c; position: absolute; left: -80px; width: calc(100% + 80px); pointer-events: none; z-index: 10; }
+        .zero-label { position: absolute; left: 0; top: -22px; color: #e74c3c; font-weight: bold; font-size: 1em; background: white; padding: 2px 5px; border-radius: 4px; border: 1px solid #e74c3c; }
+
+        .summary { grid-column: span 2; background: #ffffff; padding: 30px; border-radius: 12px; text-align: center; margin-top: 30px; border: 2px solid #b0bec5; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .summary-box { background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef; }
+        .passung-type { font-size: 1.8em; font-weight: bold; margin-top: 10px; display: inline-block; padding: 10px 30px; border-radius: 8px; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .spiel { color: #155724; background-color: #d4edda; border: 2px solid #c3e6cb; }
+        .uebermass { color: #721c24; background-color: #f8d7da; border: 2px solid #f5c6cb; }
+        .uebergang { color: #856404; background-color: #fff3cd; border: 2px solid #ffeeba; }
+
+        @media (max-width: 1024px) { .dashboard-layout { grid-template-columns: 1fr; } .visualizer { min-height: 400px; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>ISO Grenzmaße & Passungen Dashboard</h1>
+
+    <div class="dashboard-layout">
+        
+        <div class="input-column">
+            
+            <div class="nennmass-section">
+                <label><strong>Nennmaß (N) in mm:</strong></label>
+                <input type="number" id="nennmass" value="30" step="0.001" oninput="calculate()">
+            </div>
+
+            <div class="box bohrung">
+                <h2>Bohrung (Großbuchstaben)</h2>
+                <div>
+                    <label>Oberes Abmaß (ES):</label>
+                    <input type="number" id="es" value="0.033" step="0.001" oninput="calculate()" style="float: right;"><br style="clear: both; margin-bottom: 10px;">
+                    <label>Unteres Abmaß (EI):</label>
+                    <input type="number" id="ei" value="0" step="0.001" oninput="calculate()" style="float: right;"><br style="clear: both;">
+                </div>
+                
+                <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.1); margin: 20px 0;">
+                <div class="formula-group">
+                    <p>Höchstmaß: <span class="formula">G<sub>oB</sub> = N + ES</span> = <span id="gob_res" class="result-val"></span> mm</p>
+                    <p>Mindestmaß: <span class="formula">G<sub>uB</sub> = N + EI</span> = <span id="gub_res" class="result-val"></span> mm</p>
+                    <p>Toleranz: <span class="formula">T<sub>B</sub> = ES - EI</span> = <span id="tb_res" class="result-val"></span> mm</p>
+                    <p style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">Fertigungsmaß (Mitte): <br><span class="formula">M<sub>B</sub> = (G<sub>oB</sub> + G<sub>uB</sub>) / 2</span> = <span id="mb_res" class="result-val mitte-val"></span> mm</p>
+                </div>
+            </div>
+
+            <div class="box welle">
+                <h2>Welle (Kleinbuchstaben)</h2>
+                <div>
+                    <label>Oberes Abmaß (es):</label>
+                    <input type="number" id="wes" value="-0.020" step="0.001" oninput="calculate()" style="float: right;"><br style="clear: both; margin-bottom: 10px;">
+                    <label>Unteres Abmaß (ei):</label>
+                    <input type="number" id="wei" value="-0.041" step="0.001" oninput="calculate()" style="float: right;"><br style="clear: both;">
+                </div>
+                
+                <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.1); margin: 20px 0;">
+                <div class="formula-group">
+                    <p>Höchstmaß: <span class="formula">G<sub>oW</sub> = N + es</span> = <span id="gow_res" class="result-val"></span> mm</p>
+                    <p>Mindestmaß: <span class="formula">G<sub>uW</sub> = N + ei</span> = <span id="guw_res" class="result-val"></span> mm</p>
+                    <p>Toleranz: <span class="formula">T<sub>W</sub> = es - ei</span> = <span id="tw_res" class="result-val"></span> mm</p>
+                    <p style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">Fertigungsmaß (Mitte): <br><span class="formula">M<sub>W</sub> = (G<sub>oW</sub> + G<sub>uW</sub>) / 2</span> = <span id="mw_res" class="result-val mitte-val"></span> mm</p>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="graphic-column">
+            <div class="simulation-area">
+                <div class="sim-header">
+                    <h3 class="sim-title">Toleranzfelder</h3>
+                    <label class="toggle-btn">
+                        <input type="checkbox" id="bgToggle" onchange="toggleBackground()" checked style="transform: scale(1.2);"> 
+                        Material-Überlappung anzeigen
+                    </label>
+                </div>
+
+                <div class="visualizer" id="visualizer">
+                    
+                    <div id="scaleLines"></div>
+
+                    <div class="cad-background active" id="cadBg">
+                        <div class="bg-layer bg-welle" id="bgWelleMin"></div> 
+                        <div class="bg-layer bg-welle" id="bgWelleMax"></div> 
+                        <div class="bg-layer bg-bohrung" id="bgBohrungMax"></div> 
+                        <div class="bg-layer bg-bohrung" id="bgBohrungMin"></div> 
+                    </div>
+
+                    <div class="zero-line" id="zeroLine">
+                        <span class="zero-label">Nullinie (N)</span>
+                    </div>
+
+                    <div class="tol-bar bohrung-bar" id="bohrungBar">
+                        <span>Bohrung</span>
+                        <span id="bar_gob"></span>
+                        
+                        <div class="fertigungs-linie">
+                            <span id="bar_mb" class="fertigungs-label" title="Fertigungsmaß Mitte Bohrung"></span>
+                        </div>
+                        
+                        <span class="formula">T<sub>B</sub></span>
+                        <span id="bar_gub"></span>
+                    </div>
+
+                    <div class="tol-bar welle-bar" id="welleBar">
+                        <span>Welle</span>
+                        <span id="bar_gow"></span>
+                        
+                        <div class="fertigungs-linie">
+                            <span id="bar_mw" class="fertigungs-label" title="Fertigungsmaß Mitte Welle"></span>
+                        </div>
+
+                        <span class="formula">T<sub>W</sub></span>
+                        <span id="bar_guw"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="summary">
+        <h2 style="border: none; padding: 0;">Zusammenfassung & Passungsart</h2>
+        <div class="summary-grid">
+            <div class="summary-box">
+                <p style="margin-top: 0; color: #555; font-weight: bold;">Höchstspiel / Höchstübermaß</p>
+                <p><span class="formula">P<sub>SH</sub> / P<sub>ÜH</sub> = G<sub>oB</sub> - G<sub>uW</sub></span></p>
+                <p style="font-size: 1.2em; margin-bottom: 0;">= <span id="psh_res" class="result-val"></span> mm</p>
+            </div>
+            <div class="summary-box">
+                <p style="margin-top: 0; color: #555; font-weight: bold;">Mindestspiel / Mindestübermaß</p>
+                <p><span class="formula">P<sub>SM</sub> / P<sub>ÜM</sub> = G<sub>uB</sub> - G<sub>oW</sub></span></p>
+                <p style="font-size: 1.2em; margin-bottom: 0;">= <span id="psm_res" class="result-val"></span> mm</p>
+            </div>
+        </div>
+        <span id="passung_type" class="passung-type"></span>
+    </div>
+
+</div>
+
+<script>
+function toggleBackground() {
+    const bg = document.getElementById('cadBg');
+    if (document.getElementById('bgToggle').checked) {
+        bg.classList.add('active');
+    } else {
+        bg.classList.remove('active');
+    }
+}
+
+// Scrollen über Input Felder
+document.querySelectorAll('input[type="number"]').forEach(input => {
+    input.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        const step = parseFloat(this.getAttribute('step')) || 1;
+        let val = parseFloat(this.value) || 0;
+        
+        if (e.deltaY < 0) val += step;
+        else val -= step;
+        
+        const stepString = step.toString();
+        const decimals = stepString.includes('.') ? stepString.split('.')[1].length : 0;
+        this.value = val.toFixed(decimals);
+        calculate();
+    });
+});
+
+function calculate() {
+    const n = parseFloat(document.getElementById('nennmass').value) || 0;
+    
+    const es = parseFloat(document.getElementById('es').value) || 0;
+    const ei = parseFloat(document.getElementById('ei').value) || 0;
+    
+    const wes = parseFloat(document.getElementById('wes').value) || 0;
+    const wei = parseFloat(document.getElementById('wei').value) || 0;
+
+    // Berechnung Bohrung
+    const gob = n + es;
+    const gub = n + ei;
+    const tb = es - ei;
+    const mb = (gob + gub) / 2; 
+
+    // Berechnung Welle
+    const gow = n + wes;
+    const guw = n + wei;
+    const tw = wes - wei;
+    const mw = (gow + guw) / 2; 
+
+    // Berechnung Passung
+    const psh = gob - guw; 
+    const psm = gub - gow; 
+
+    // UI Updates Text
+    document.getElementById('gob_res').innerText = gob.toFixed(3);
+    document.getElementById('gub_res').innerText = gub.toFixed(3);
+    document.getElementById('tb_res').innerText = tb.toFixed(3);
+    document.getElementById('mb_res').innerText = mb.toFixed(3); 
+    
+    document.getElementById('gow_res').innerText = gow.toFixed(3);
+    document.getElementById('guw_res').innerText = guw.toFixed(3);
+    document.getElementById('tw_res').innerText = tw.toFixed(3);
+    document.getElementById('mw_res').innerText = mw.toFixed(3); 
+    
+    document.getElementById('psh_res').innerText = psh.toFixed(3);
+    document.getElementById('psm_res').innerText = psm.toFixed(3);
+
+    let typeText = "";
+    let typeClass = "";
+    if (psm >= 0 && psh >= 0) {
+        typeText = "Spielpassung";
+        typeClass = "spiel";
+    } else if (psm < 0 && psh < 0) {
+        typeText = "Übermaßpassung";
+        typeClass = "uebermass";
+    } else {
+        typeText = "Übergangspassung";
+        typeClass = "uebergang";
+    }
+    const typeSpan = document.getElementById('passung_type');
+    typeSpan.innerText = typeText;
+    typeSpan.className = "passung-type " + typeClass;
+
+    // --- GRAFISCHE BERECHNUNG ---
+    const vis = document.getElementById('visualizer');
+    const visHeight = vis.clientHeight - 40; 
+    
+    const allDims = [gob, gub, gow, guw, n];
+    const maxDim = Math.max(...allDims);
+    const minDim = Math.min(...allDims);
+    const fullRange = maxDim - minDim;
+    
+    const pad = Math.max(fullRange * 0.15, 0.005); 
+    const plotMin = minDim - pad;
+    const plotMax = maxDim + pad;
+    const plotRange = plotMax - plotMin;
+
+    const dimToPix = (dim) => {
+        return ((dim - plotMin) / plotRange) * visHeight;
+    };
+
+    // 1. Vordergrund-Balken updaten
+    const updateBar = (barId, topDim, bottomDim, valTopId, valBotId) => {
+        const bar = document.getElementById(barId);
+        const topY = dimToPix(topDim);
+        const bottomY = dimToPix(bottomDim);
+        bar.style.bottom = bottomY + 'px';
+        bar.style.height = Math.max((topY - bottomY), 2) + 'px'; 
+        document.getElementById(valTopId).innerText = topDim.toFixed(3);
+        document.getElementById(valBotId).innerText = bottomDim.toFixed(3);
+    };
+    updateBar('bohrungBar', gob, gub, 'bar_gob', 'bar_gub');
+    updateBar('welleBar', gow, guw, 'bar_gow', 'bar_guw');
+
+    // UI Updates für Fertigungsmaß in der Grafik
+    document.getElementById('bar_mb').innerText = "M: " + mb.toFixed(3);
+    document.getElementById('bar_mw').innerText = "M: " + mw.toFixed(3);
+
+    // 2. Transparenz-Ebenen für Material im Hintergrund updaten
+    document.getElementById('bgWelleMin').style.height = dimToPix(guw) + 'px';
+    document.getElementById('bgWelleMax').style.height = dimToPix(gow) + 'px';
+    document.getElementById('bgBohrungMin').style.bottom = dimToPix(gub) + 'px';
+    document.getElementById('bgBohrungMax').style.bottom = dimToPix(gob) + 'px';
+
+    // 3. Nullinie und Skala
+    const zeroLineY = dimToPix(n);
+    document.getElementById('zeroLine').style.bottom = zeroLineY + 'px';
+
+    const scaleLinesDiv = document.getElementById('scaleLines');
+    scaleLinesDiv.innerHTML = ''; 
+
+    let step = 0.01; 
+    if (plotRange > 0.15) step = 0.05; 
+    if (plotRange > 0.5) step = 0.1;   
+    if (plotRange < 0.03) step = 0.005; 
+    
+    let currentScaleVal = Math.floor(plotMin / step) * step;
+    while (currentScaleVal <= plotMax) {
+        if (Math.abs(currentScaleVal - n) > (step * 0.1)) { 
+            const lineY = dimToPix(currentScaleVal);
+            if (lineY >= 0 && lineY <= visHeight + 40) {
+                const line = document.createElement('div');
+                line.className = 'scale-line';
+                line.style.bottom = lineY + 'px';
+                const label = document.createElement('span');
+                label.className = 'scale-label';
+                label.innerText = currentScaleVal.toFixed(3);
+                line.appendChild(label);
+                scaleLinesDiv.appendChild(line);
+            }
+        }
+        currentScaleVal += step;
+    }
+}
+
+window.addEventListener('load', calculate);
+window.addEventListener('resize', calculate);
+</script>
+
+</body>
+</html>
