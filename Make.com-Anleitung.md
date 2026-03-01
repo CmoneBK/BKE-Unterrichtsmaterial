@@ -12,7 +12,21 @@ Damit Make.com in Ihr Repository schreiben darf, wird ein Zugriffs-Token benöti
 
 ---
 
-## 🏗 Der Aufbau in Make.com
+## 🚀 Methode A: Der Schnellstart (Empfohlen)
+
+Sie müssen die Module nicht von Hand zusammenbauen. Nutzen Sie einfach unsere fertige Vorlage:
+
+1. Klicken Sie auf diesen Link: 👉 **[Szenario duplizieren & importieren](https://eu1.make.com/public/shared-scenario/Eghpa8gJd8q/codepen-to-github)**
+2. Speichern Sie das Szenario in Ihrem Make.com-Account.
+3. **Webhook anpassen:** Klicken Sie auf das erste Modul (Custom Webhook), generieren Sie eine neue Adresse und kopieren Sie diese in Ihr [Browser-Lesezeichen](Lesezeichen%20Erstellen.md).
+4. **GitHub anpassen:** Öffnen Sie die beiden HTTP-Module (GET und PUT) und ersetzen Sie:
+   * In der **URL:** Ihren GitHub-Namen und Repository-Namen.
+   * Bei den **Headern:** Tauschen Sie den Dummy-Token bei `Authorization` gegen Ihren echten GitHub-Token (den Teil `Bearer ` davor stehen lassen!).
+5. Speichern und unten links auf **ON** stellen. Fertig!
+
+---
+
+## 🛠 Methode B: Manueller Aufbau (Für Interessierte)
 
 Das Szenario besteht aus exakt **drei Haupt-Modulen** und **einem Error-Handler**.
 
