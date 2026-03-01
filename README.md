@@ -1,6 +1,6 @@
 # 🎓 Interaktive Unterrichts-Mediathek
 
-Dieses Repository dient als automatisches Archiv und Hosting-Plattform für interaktive Unterrichtswerkzeuge, die in **CodePen** erstellt wurden. Dank einer Make.com-Automation werden Pens mit nur einem Klick direkt hierher übertragen, automatisch kategorisiert und veröffentlicht.
+Dieses Repository dient als automatisches Archiv und Hosting-Plattform für interaktive Unterrichtswerkzeuge, die in **[CodePen](https://codepen.io)** erstellt wurden. Dank einer **[Make.com](https://www.make.com)**-Automation werden Pens mit nur einem Klick direkt hierher übertragen, automatisch kategorisiert und veröffentlicht.
 
 ## 📖 Ausführliche Anleitungen
 Für die initiale Einrichtung oder Wartung des Systems finden Sie hier die detaillierten Schritt-für-Schritt-Anleitungen:
@@ -11,9 +11,9 @@ Für die initiale Einrichtung oder Wartung des Systems finden Sie hier die detai
 
 Der Prozess ist vollständig automatisiert und besteht aus vier Komponenten:
 
-1. **CodePen (Quelle):** Hier werden die HTML/CSS-Tools entwickelt.
+1. **[CodePen](https://codepen.io) (Quelle):** Hier werden die HTML/CSS-Tools entwickelt.
 2. **Bookmarklet (Trigger):** Ein spezielles Browser-Lesezeichen extrahiert den Code und Titel und sendet ein JSON-Paket an Make.com.
-3. **Make.com (Brücke):** - Empfängt die Daten über einen Webhook.
+3. **[Make.com](https://www.make.com) (Brücke):** - Empfängt die Daten über einen Webhook.
    - Prüft via GitHub-API (GET), ob die Datei bereits existiert.
    - Falls ja, wird der `sha`-Wert ausgelesen, um die Datei zu überschreiben.
    - Speichert die Datei (PUT) im Unterordner `/tools/`.
@@ -47,7 +47,7 @@ Das verwendete JavaScript-Bookmarklet führt folgende Schritte aus:
 
 ## 🌐 Live-Ansicht
 Die Mediathek ist für Schüler und Kollegen erreichbar unter:
-👉 **[(https://cmonebk.github.io/CmoneBK-Unterrichtsmaterial/)](https://cmonebk.github.io/CmoneBK-Unterrichtsmaterial/)**
+👉 **[https://cmonebk.github.io/CmoneBK-Unterrichtsmaterial/](https://cmonebk.github.io/CmoneBK-Unterrichtsmaterial/)**
 
 ## 🔧 Fehlerbehebung
 - **Titel wird nicht korrekt angezeigt:** Prüfen Sie, ob das Tool im HTML-Code ganz oben die `---` Striche mit dem Titel-Eintrag enthält.
