@@ -1,0 +1,449 @@
+---
+title: "Fertigungstechnik: Messmittel Sinuslineal"
+---
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fertigungstechnik: Messmittel Sinuslineal</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a; --panel-bg: #1e293b; --text-light: #f8fafc;
+            --blue: #38bdf8; --green: #10b981; --red: #ef4444; --orange: #f59e0b;
+            --steel: #cbd5e1; --steel-dark: #475569; --border: #334155;
+            --granite: #0a0f18;
+        }
+        
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-dark); color: var(--text-light); margin: 0; padding: 2vh 2vw; display: flex; justify-content: center; }
+        
+        .dashboard { max-width: 1450px; width: 100%; display: grid; grid-template-columns: minmax(320px, 350px) 1fr; gap: 20px; }
+        .panel { background: var(--panel-bg); border-radius: 12px; padding: 25px; border: 1px solid var(--border); box-shadow: 0 15px 40px rgba(0,0,0,0.6); display: flex; flex-direction: column; }
+        h2 { margin-top: 0; color: var(--blue); border-bottom: 2px solid var(--border); padding-bottom: 12px; font-size: 1.4em; }
+        
+        .gauge-cat { margin-bottom: 15px; }
+        .gauge-cat span { display: block; font-size: 0.85em; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .grid-btns { display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 6px; }
+        .btn-block { background: linear-gradient(180deg, #334155, #1e293b); border: 1px solid #475569; color: #e2e8f0; font-family: 'Courier New', monospace; font-weight: bold; padding: 10px 0; border-radius: 5px; cursor: pointer; transition: all 0.15s ease; font-size: 14px; }
+        .btn-block:hover { background: var(--blue); color: #fff; border-color: #fff; box-shadow: 0 0 10px rgba(56,189,248,0.4); }
+        .btn-block:active { transform: scale(0.92); }
+        
+        .stack-view { background: #0b1120; padding: 15px; border-radius: 8px; font-family: monospace; color: var(--green); flex-grow: 1; overflow-y: auto; border: 1px inset #334155; margin-bottom: 15px; min-height: 140px; box-shadow: inset 0 5px 15px rgba(0,0,0,0.5); }
+        .stack-item { display: flex; justify-content: space-between; border-bottom: 1px dashed #334155; padding: 6px 0; font-size: 1.15em; }
+        .btn-remove { color: var(--red); cursor: pointer; font-weight: bold; padding: 0 10px; transition: 0.2s; }
+        .btn-remove:hover { color: #f87171; text-shadow: 0 0 8px rgba(239,68,68,0.6); }
+        .total-box { font-size: 1.6em; font-weight: bold; color: var(--blue); text-align: right; background: rgba(56,189,248,0.1); padding: 12px; border-radius: 6px; border: 1px solid rgba(56,189,248,0.3); }
+        .btn-clear { width: 100%; background: transparent; border: 1px solid var(--red); color: var(--red); padding: 12px; border-radius: 6px; cursor: pointer; margin-top: 15px; font-weight: bold; transition: 0.2s; font-size: 1.05em; }
+        .btn-clear:hover { background: var(--red); color: white; box-shadow: 0 0 15px rgba(239,68,68,0.4); }
+
+        .canvas-container { width: 100%; position: relative; margin-bottom: 20px; }
+        canvas { width: 100%; height: auto; background: linear-gradient(to bottom, #1e293b 0%, #0b1120 100%); border-radius: 10px; border: 1px solid var(--border); box-shadow: inset 0 0 30px rgba(0,0,0,0.8); display: block; }
+        
+        .controls { background: #0b1120; padding: 20px; border-radius: 8px; border: 1px solid var(--border); }
+        .slider-row { margin: 15px 0 25px 0; }
+        input[type=range] { -webkit-appearance: none; width: 100%; height: 8px; border-radius: 4px; background: #334155; outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%; background: var(--blue); cursor: pointer; border: 3px solid #fff; box-shadow: 0 0 12px rgba(56,189,248,0.6); transition: 0.1s; }
+        input[type=range]::-webkit-slider-thumb:active { transform: scale(1.1); }
+        
+        .slider-error::-webkit-slider-thumb { background: var(--orange) !important; box-shadow: 0 0 12px rgba(245,158,11,0.6) !important; }
+        
+        .flex-row { display: flex; justify-content: space-between; align-items: center; }
+        .btn-zero { background: var(--blue); color: #fff; border: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .btn-zero:hover { background: #0284c7; box-shadow: 0 0 15px rgba(2,132,199,0.5); }
+        .btn-zero:active { transform: translateY(2px); }
+        
+        .info-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05); }
+        .info-val { display: block; font-size: 1.3em; color: #fff; font-weight: bold; margin-top: 4px; font-family: monospace; }
+        .info-label { font-size: 0.85em; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+        .error-badge { background: rgba(245,158,11,0.1); border: 1px solid var(--orange); padding: 10px; border-radius: 6px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <div class="panel">
+        <h2>Endmaß-Kasten</h2>
+        <div class="gauge-cat"><span>Zehner & Einer (mm)</span><div class="grid-btns" id="grid-mm"></div></div>
+        <div class="gauge-cat"><span>Zehntel (mm)</span><div class="grid-btns" id="grid-tenths"></div></div>
+        <div class="gauge-cat"><span>Hundertstel (mm)</span><div class="grid-btns" id="grid-hundredths"></div></div>
+        
+        <h2 style="margin-top: 15px;">Unterbau</h2>
+        <div class="stack-view" id="stack-list"></div>
+        <div class="total-box">Σ H = <span id="total-val">0.00</span> mm</div>
+        <button class="btn-clear" onclick="clearStack()">Tisch abräumen</button>
+    </div>
+
+    <div class="panel">
+        <div class="info-bar">
+            <div><span class="info-label">Sinuslineal L</span><span class="info-val">200 mm</span></div>
+            <div><span class="info-label">Soll-Winkel α</span><span class="info-val">12.37°</span></div>
+            <div><span class="info-label">Nennmaß H</span><span class="info-val" style="color: var(--blue);">42.84 mm</span></div>
+            <div><span class="info-label">Messuhr Status</span><span class="info-val" id="status-txt" style="color: var(--red);">Nicht genullt</span></div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="simCanvas" width="1100" height="550"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="error-badge">
+                <div class="flex-row">
+                    <label style="font-weight: 600; font-size: 1.05em; color: var(--orange);">⚙️ Maschineller Fertigungsfehler (Winkelabweichung):</label>
+                    <span style="font-family: monospace; font-size: 1.2em; color: var(--orange); font-weight: bold;"><span id="err-val">0.00</span>°</span>
+                </div>
+                <div class="slider-row" style="margin-bottom: 10px;">
+                    <input type="range" id="sliderError" class="slider-error" min="-1.5" max="1.5" value="0" step="0.05">
+                </div>
+            </div>
+
+            <div class="flex-row">
+                <label style="font-weight: 600; font-size: 1.1em; color: var(--steel);">Messtaster über obere Mantellinie verfahren:</label>
+                <span style="font-family: monospace; font-size: 1.3em; color: var(--blue); font-weight: bold;">Pos: <span id="pos-val">0</span>%</span>
+            </div>
+            <div class="slider-row">
+                <input type="range" id="sliderPos" min="0" max="100" value="0" step="0.1">
+            </div>
+            
+            <div class="flex-row">
+                <span style="color: #64748b; font-size: 0.95em;">
+                    Nennmaß aufbauen &rarr; Fehler simulieren &rarr; Taster nullen &rarr; Verlauf prüfen.
+                </span>
+                <button class="btn-zero" onclick="zeroDial()">Messuhr Nullen (0)</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const L = 200; 
+    const targetH = 42.84; 
+    const targetAlphaRad = Math.asin(targetH / L); // Nenn-Vollwinkel α (12.37°)
+    
+    // Kegelstumpf Nenn-Dimensionen
+    const coneLen = 140; 
+    const coneD_large = 48; 
+    const cylLen = 60; 
+    const cylD = 32; 
+    
+    let stack = [];
+    let currentHeight = 0;
+    let sliderPos = 0; 
+    let errorDeg = 0; // Neu: Neigungsfehler in Grad
+    
+    let isZeroed = false;
+    let zeroWorldY = 0;
+    
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const K = 2.2; 
+    const pivotX = 180; 
+    const pivotY = 430; 
+    
+    const r_mm = 12; 
+    const bar_mm = 22; 
+
+    const blocksMM = [50, 30, 20, 10, 5, 2, 1];
+    const blocksT = [1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3, 1.2, 1.1];
+    const blocksH = [1.09, 1.08, 1.07, 1.06, 1.05, 1.04, 1.03, 1.02, 1.01];
+
+    function init() {
+        populateGrid('grid-mm', blocksMM);
+        populateGrid('grid-tenths', blocksT);
+        populateGrid('grid-hundredths', blocksH);
+        
+        document.getElementById('sliderPos').addEventListener('input', (e) => {
+            sliderPos = parseFloat(e.target.value);
+            document.getElementById('pos-val').innerText = sliderPos.toFixed(1);
+            draw();
+        });
+        
+        document.getElementById('sliderError').addEventListener('input', (e) => {
+            errorDeg = parseFloat(e.target.value);
+            let sign = errorDeg > 0 ? "+" : "";
+            document.getElementById('err-val').innerText = sign + errorDeg.toFixed(2);
+            
+            // Verändert sich das Bauteil, verfällt die Nullung der Uhr
+            isZeroed = false;
+            document.getElementById('status-txt').innerText = "Nicht genullt";
+            document.getElementById('status-txt').style.color = "var(--red)";
+            draw();
+        });
+        
+        updateState();
+    }
+
+    function populateGrid(id, arr) {
+        const div = document.getElementById(id);
+        arr.forEach(val => {
+            let btn = document.createElement('button');
+            btn.className = 'btn-block';
+            btn.innerText = val.toFixed(val % 1 === 0 ? 0 : 2);
+            btn.onclick = () => { stack.push(val); updateState(); };
+            div.appendChild(btn);
+        });
+    }
+
+    function removeBlock(i) { stack.splice(i, 1); updateState(); }
+    function clearStack() { stack = []; updateState(); }
+
+    function updateState() {
+        currentHeight = stack.reduce((a, b) => a + b, 0);
+        const list = document.getElementById('stack-list');
+        list.innerHTML = stack.slice().reverse().map((v, i) => 
+            `<div class="stack-item"><span>${v.toFixed(2)} mm</span><span class="btn-remove" onclick="removeBlock(${stack.length - 1 - i})">✖</span></div>`
+        ).join('');
+        document.getElementById('total-val').innerText = currentHeight.toFixed(2);
+        
+        isZeroed = false;
+        document.getElementById('status-txt').innerText = "Nicht genullt";
+        document.getElementById('status-txt').style.color = "var(--red)";
+        draw();
+    }
+
+    function zeroDial() {
+        const sim = calcKinematics();
+        zeroWorldY = sim.probeWorldY;
+        isZeroed = true;
+        document.getElementById('status-txt').innerText = "Aktiv (Genullt)";
+        document.getElementById('status-txt').style.color = "var(--green)";
+        draw();
+    }
+
+    function calcKinematics() {
+        const safeH = Math.min(currentHeight, L);
+        const currentAlphaRad = Math.asin(safeH / L); 
+        
+        // --- FEHLERBERECHNUNG ---
+        const errorRad = errorDeg * Math.PI / 180;
+        const actualAlphaRad = targetAlphaRad + errorRad; 
+        const actualBetaRad = actualAlphaRad / 2; 
+        
+        // Der kleine Durchmesser ändert sich zwingend durch den Fertigungsfehler, 
+        // da die Länge konstant bleibt und der Fehler sich an der Spitze summiert.
+        const actualConeD_small = coneD_large - 2 * (coneLen * Math.tan(actualBetaRad));
+        
+        const coneOffsetX = 40; 
+        const lineTopY = r_mm + bar_mm; 
+        
+        // Die Welle kippt physikalisch um den ECHTEN Halbwinkel, damit sie unten satt aufliegt
+        const y_trans = lineTopY + (coneD_large / 2) * Math.cos(actualBetaRad);
+
+        function shaftToWorld(sx, sy) {
+            // A: Welle in Lineal-Lage rotieren (um echten Halbwinkel beta)
+            let bx = sx * Math.cos(-actualBetaRad) - sy * Math.sin(-actualBetaRad);
+            let by = sx * Math.sin(-actualBetaRad) + sy * Math.cos(-actualBetaRad);
+            bx += coneOffsetX;
+            by += y_trans;
+            
+            // B: Gesamtsystem Lineal in den Raum heben (um gemessenen Winkel alpha)
+            let wx = bx * Math.cos(currentAlphaRad) - by * Math.sin(currentAlphaRad);
+            let wy = bx * Math.sin(currentAlphaRad) + by * Math.cos(currentAlphaRad);
+            
+            return {
+                x: pivotX + (wx * K),
+                y: pivotY - (wy * K)
+            };
+        }
+
+        // Taster-Position auf der fehlerhaften Mantellinie
+        const probe_sx = coneLen * (sliderPos / 100);
+        const probe_sy = (coneD_large / 2) - ((coneD_large / 2 - actualConeD_small / 2) * (sliderPos / 100));
+        const probePos = shaftToWorld(probe_sx, probe_sy);
+
+        return { 
+            currentAlphaRad, 
+            shaftToWorld, 
+            probeWorldX: probePos.x, 
+            probeWorldY: probePos.y,
+            actualConeD_small 
+        };
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const sim = calcKinematics();
+        const graniteY_px = pivotY + (r_mm * K);
+
+        // 1. Hartgestein Messplatte
+        ctx.fillStyle = 'var(--granite)'; ctx.fillRect(0, graniteY_px, canvas.width, canvas.height);
+        ctx.beginPath(); ctx.moveTo(0, graniteY_px); ctx.lineTo(canvas.width, graniteY_px);
+        ctx.strokeStyle = '#475569'; ctx.lineWidth = 5; ctx.stroke();
+        
+        ctx.fillStyle = 'rgba(255,255,255,0.02)';
+        ctx.fillRect(0, graniteY_px, canvas.width, 10);
+
+        if (isZeroed) {
+            ctx.beginPath(); ctx.moveTo(0, zeroWorldY); ctx.lineTo(canvas.width, zeroWorldY);
+            ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)'; ctx.setLineDash([12, 8]); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
+        }
+
+        // 2. Endmaß-Stapel
+        const rightPivotX_px = pivotX + (L * K) * Math.cos(sim.currentAlphaRad);
+        if (currentHeight > 0) {
+            let currY_px = graniteY_px;
+            ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 1;
+            for (let i = 0; i < stack.length; i++) {
+                let blockH_px = stack[i] * K;
+                ctx.fillStyle = i % 2 === 0 ? '#94a3b8' : '#cbd5e1';
+                ctx.fillRect(rightPivotX_px - 25, currY_px - blockH_px, 50, blockH_px);
+                ctx.strokeRect(rightPivotX_px - 25, currY_px - blockH_px, 50, blockH_px);
+                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                ctx.fillRect(rightPivotX_px - 23, currY_px - blockH_px + 1, 3, blockH_px - 2);
+                currY_px -= blockH_px;
+            }
+        }
+
+        // 3. Rollen
+        const rightPivotY_px = pivotY - (Math.min(currentHeight, L) * K);
+        ctx.fillStyle = '#e2e8f0'; ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 2.5;
+        
+        ctx.beginPath(); ctx.arc(pivotX, pivotY, r_mm * K, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(pivotX, pivotY, (r_mm * K) * 0.4, 0, Math.PI*2); ctx.stroke();
+        
+        ctx.beginPath(); ctx.arc(rightPivotX_px, rightPivotY_px, r_mm * K, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(rightPivotX_px, rightPivotY_px, (r_mm * K) * 0.4, 0, Math.PI*2); ctx.stroke();
+
+        // 4. Lineal
+        ctx.save();
+        ctx.translate(pivotX, pivotY);
+        ctx.rotate(-sim.currentAlphaRad); 
+        
+        let barGrad = ctx.createLinearGradient(0, -(r_mm + bar_mm) * K, 0, -r_mm * K);
+        barGrad.addColorStop(0, '#64748b'); barGrad.addColorStop(1, '#334155');
+        ctx.fillStyle = barGrad;
+        ctx.fillRect(0, -(r_mm + bar_mm) * K, L * K, bar_mm * K);
+        ctx.strokeRect(0, -(r_mm + bar_mm) * K, L * K, bar_mm * K);
+        
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(-12 * K, -(r_mm + bar_mm + 25) * K, 12 * K, (bar_mm + 25) * K);
+        ctx.restore();
+
+        // 5. Welle
+        const pCyl_TL = sim.shaftToWorld(-cylLen, cylD / 2);
+        const pCyl_BL = sim.shaftToWorld(-cylLen, -cylD / 2);
+        const pCyl_TR = sim.shaftToWorld(0, cylD / 2);
+        const pCyl_BR = sim.shaftToWorld(0, -cylD / 2);
+
+        const pCone_TL = sim.shaftToWorld(0, coneD_large / 2);
+        const pCone_BL = sim.shaftToWorld(0, -coneD_large / 2);
+        const pCone_TR = sim.shaftToWorld(coneLen, sim.actualConeD_small / 2);
+        const pCone_BR = sim.shaftToWorld(coneLen, -sim.actualConeD_small / 2);
+
+        const pAxis_Start = sim.shaftToWorld(-cylLen - 20, 0);
+        const pAxis_End = sim.shaftToWorld(coneLen + 30, 0);
+
+        ctx.beginPath();
+        ctx.moveTo(pCyl_TL.x, pCyl_TL.y); ctx.lineTo(pCyl_TR.x, pCyl_TR.y);
+        ctx.lineTo(pCyl_BR.x, pCyl_BR.y); ctx.lineTo(pCyl_BL.x, pCyl_BL.y);
+        ctx.closePath();
+        let cylGrad = ctx.createLinearGradient(pCyl_TL.x, pCyl_TL.y, pCyl_BL.x, pCyl_BL.y);
+        cylGrad.addColorStop(0, '#e0f2fe'); cylGrad.addColorStop(0.3, '#38bdf8'); cylGrad.addColorStop(0.7, '#0284c7'); cylGrad.addColorStop(1, '#082f49');
+        ctx.fillStyle = cylGrad; ctx.fill();
+        ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 1.5; ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(pCone_TL.x, pCone_TL.y); ctx.lineTo(pCone_TR.x, pCone_TR.y);
+        ctx.lineTo(pCone_BR.x, pCone_BR.y); ctx.lineTo(pCone_BL.x, pCone_BL.y);
+        ctx.closePath();
+        let coneGrad = ctx.createLinearGradient(pCone_TL.x, pCone_TL.y, pCone_BL.x, pCone_BL.y);
+        coneGrad.addColorStop(0, '#e0f2fe'); coneGrad.addColorStop(0.3, '#38bdf8'); coneGrad.addColorStop(0.7, '#0284c7'); coneGrad.addColorStop(1, '#082f49');
+        ctx.fillStyle = coneGrad; ctx.fill(); ctx.stroke();
+
+        // Rot gestrichelte Mittenachse
+        ctx.beginPath(); ctx.moveTo(pAxis_Start.x, pAxis_Start.y); ctx.lineTo(pAxis_End.x, pAxis_End.y);
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)'; ctx.setLineDash([20, 10, 5, 10]); ctx.lineWidth = 1.5; ctx.stroke(); ctx.setLineDash([]);
+
+        // 6. Messstativ
+        const px = sim.probeWorldX;
+        const py = sim.probeWorldY;
+        const stativBaseX = Math.max(px + 100, pivotX + 450);
+
+        ctx.fillStyle = '#0f172a'; ctx.fillRect(stativBaseX, graniteY_px - 35, 80, 35);
+        ctx.fillStyle = '#1e293b'; ctx.fillRect(stativBaseX + 5, graniteY_px - 35, 70, 5); 
+        
+        ctx.fillStyle = '#cbd5e1'; ctx.strokeStyle = '#475569'; ctx.lineWidth = 1;
+        ctx.fillRect(stativBaseX + 30, py - 90, 20, (graniteY_px - 35) - (py - 90));
+        ctx.strokeRect(stativBaseX + 30, py - 90, 20, (graniteY_px - 35) - (py - 90));
+        ctx.fillRect(px, py - 90, (stativBaseX + 30) - px, 18);
+        ctx.strokeRect(px, py - 90, (stativBaseX + 30) - px, 18);
+        
+        ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(px, py - 72); ctx.lineTo(px, py); ctx.stroke();
+        
+        ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(px, py, 5.5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(px - 1.5, py - 1.5, 1.5, 0, Math.PI*2); ctx.fill();
+
+        // 7. Messuhr
+        drawDial(py);
+    }
+
+    function drawDial(currentProbeWorldY) {
+        const cx = canvas.width - 150;
+        const cy = 140;
+        const rOut = 95;
+        const rIn = 75;
+
+        let devMM = 0;
+        if (isZeroed) {
+            const deltaPx = zeroWorldY - currentProbeWorldY; 
+            devMM = deltaPx / K; 
+        }
+
+        ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 15; ctx.shadowOffsetY = 8;
+        ctx.beginPath(); ctx.arc(cx, cy, rOut, 0, Math.PI*2); 
+        
+        let caseGrad = ctx.createLinearGradient(cx - rOut, cy - rOut, cx + rOut, cy + rOut);
+        caseGrad.addColorStop(0, '#94a3b8'); caseGrad.addColorStop(0.5, '#475569'); caseGrad.addColorStop(1, '#1e293b');
+        ctx.fillStyle = caseGrad; ctx.fill();
+        ctx.shadowColor = 'transparent';
+        
+        ctx.beginPath(); ctx.arc(cx, cy, rIn, 0, Math.PI*2); ctx.fillStyle = '#f8fafc'; ctx.fill(); 
+        ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 3; ctx.stroke();
+
+        ctx.translate(cx, cy);
+        for(let i=0; i<100; i++) {
+            ctx.rotate((i/100) * Math.PI*2);
+            ctx.beginPath(); ctx.moveTo(0, -rIn); 
+            ctx.lineTo(0, i%10===0 ? -rIn+14 : (i%5===0 ? -rIn+10 : -rIn+6));
+            ctx.lineWidth = i%10===0 ? 2.5 : 1; 
+            ctx.strokeStyle = i%10===0 ? '#0f172a' : '#475569'; 
+            ctx.stroke();
+            ctx.rotate(-(i/100) * Math.PI*2);
+        }
+
+        ctx.fillStyle = '#e2e8f0'; ctx.fillRect(-45, 28, 90, 24);
+        ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1; ctx.strokeRect(-45, 28, 90, 24);
+        
+        // Anzeige-Logik
+        const isPerfect = Math.abs(devMM) < 0.005;
+        ctx.fillStyle = isZeroed ? (isPerfect ? '#10b981' : '#ef4444') : '#94a3b8';
+        ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        
+        // Extrem-Ausschlag abfangen (über 3mm ist das System quasi kaputt)
+        let displayStr = '-.---';
+        if (isZeroed) {
+            if (Math.abs(devMM) > 5) displayStr = "ERROR";
+            else displayStr = (devMM>0?'+':'') + devMM.toFixed(3);
+        }
+        ctx.fillText(displayStr, 0, 41);
+
+        // Rotation: 1mm Hub = 1 volle Umdrehung der Messuhr
+        let rot = isZeroed ? devMM * Math.PI * 2 : 0;
+        ctx.rotate(rot);
+        
+        ctx.beginPath(); 
+        ctx.moveTo(-4, 18); ctx.lineTo(4, 18); 
+        ctx.lineTo(1.5, -rIn+16); ctx.lineTo(-1.5, -rIn+16); 
+        ctx.fillStyle = '#ef4444'; ctx.fill();
+        ctx.beginPath(); ctx.arc(0,0,7,0,Math.PI*2); ctx.fillStyle = '#0f172a'; ctx.fill();
+        ctx.beginPath(); ctx.arc(0,0,3,0,Math.PI*2); ctx.fillStyle = '#cbd5e1'; ctx.fill();
+        
+        ctx.rotate(-rot); ctx.translate(-cx, -cy);
+    }
+
+    init();
+
+</script>
+</body>
+</html>
