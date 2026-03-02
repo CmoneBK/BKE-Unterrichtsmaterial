@@ -1,0 +1,684 @@
+---
+title: "Fertigungstechnik: Form- und Lagetoleranzen - Koaxialität vs. Rundlauf"
+---
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fertigungstechnik: Form- und Lagetoleranzen - Koaxialität vs. Rundlauf</title>
+    
+    <!-- Three.js Bibliothek & OrbitControls einbinden -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --text-color: #333;
+            --accent-color: #2980b9;
+            --danger-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --panel-bg: #ffffff;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 { color: #2c3e50; margin-bottom: 5px; text-align: center; }
+        p.subtitle { text-align: center; color: #666; max-width: 800px; margin-bottom: 20px; line-height: 1.5; }
+        h2 { margin-top: 0; color: #555; font-size: 1.2em; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        
+        /* Layout Container */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            width: 100%;
+        }
+        @media (max-width: 1000px) {
+            .main-grid { grid-template-columns: 1fr; }
+        }
+        .panel {
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        /* 3D Container & Canvases */
+        #simContainer {
+            width: 100%;
+            height: 400px;
+            background-color: #eef2f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            position: relative;
+            cursor: grab;
+        }
+        #simContainer:active { cursor: grabbing; }
+        
+        #overlay-hint {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            pointer-events: none;
+        }
+
+        canvas {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            display: block;
+            width: 100%;
+        }
+        #gaugeCanvas { width: 200px; height: 200px; margin: 0 auto 15px auto; border: none; }
+        #graphCanvas { height: 150px; background-color: #fcfcfc; border-color: #eee;}
+
+        /* Controls */
+        .controls-container { display: flex; flex-direction: column; gap: 15px; background: #f9fbfb; padding: 15px; border-radius: 6px; border: 1px solid #eee;}
+        .control-group { display: flex; flex-direction: column; }
+        label { font-weight: 600; font-size: 0.9em; margin-bottom: 8px; display: flex; justify-content: space-between; color: #444;}
+        .value-display { font-family: monospace; color: var(--accent-color); font-size: 1.1em; font-weight: bold;}
+        input[type=range] { width: 100%; cursor: pointer; accent-color: var(--accent-color); }
+        .highlight-bg { background-color: #fff3cd; padding: 10px; border-radius: 4px; border: 1px dashed #ffe69c;}
+        
+        /* Buttons & Results */
+        .btn-rotate {
+            background-color: var(--success-color); color: white; border: none; padding: 15px;
+            border-radius: 6px; font-size: 1.1em; font-weight: bold; cursor: pointer; transition: all 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            width: 100%; margin-bottom: 15px;
+        }
+        .btn-rotate:hover { background-color: #219a52; transform: translateY(-1px); }
+        .btn-rotate.active { background-color: var(--danger-color); }
+        .btn-rotate.active:hover { background-color: #c0392b; }
+        
+        .btn-zero {
+            background-color: #34495e; color: white; border: none; padding: 10px;
+            border-radius: 6px; font-size: 1em; font-weight: bold; cursor: pointer; transition: all 0.2s ease;
+            width: 100%; margin-bottom: 15px;
+        }
+        .btn-zero:hover { background-color: #2c3e50; transform: translateY(-1px); }
+
+        .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;}
+        
+        .result-box {
+            background: #ecf0f1; padding: 10px; border-radius: 6px;
+            text-align: center; border-left: 5px solid #ccc;
+        }
+        .result-box.coax { border-left-color: var(--danger-color); background: #fdf2f0;}
+        .result-box.runout { border-left-color: var(--warning-color); background: #fdf8eb;}
+        
+        .result-value { font-size: 1.6em; font-weight: bold; display: block; margin-top: 5px;}
+        .result-box.coax .result-value { color: var(--danger-color); }
+        .result-box.runout .result-value { color: #d35400; }
+        
+        .result-label { font-size: 0.8em; color: #555; font-weight: 600; text-transform: uppercase;}
+
+        /* Legend */
+        .legend { display: flex; gap: 15px; flex-wrap: wrap; font-size: 0.9em; margin-top: 10px; padding: 10px; background: #fff; border-radius: 4px; border: 1px dashed #ccc;}
+        .legend-item { display: flex; align-items: center; gap: 6px; color: #555;}
+        .color-box { width: 14px; height: 14px; border-radius: 3px; }
+
+    </style>
+</head>
+<body>
+
+    <h1>3D-Simulation: Koaxialität vs. Rundlauf</h1>
+    <p class="subtitle">Bewege die 3D-Ansicht mit der Maus. Füge einen <strong>Formfehler (Unrundheit)</strong> hinzu, um zu sehen, wie die Rundlaufmessung (Messuhr) verfälscht wird, während die theoretische Koaxialität der Achse gleich bleibt.</p>
+
+    <div class="main-grid">
+        <!-- Linke Spalte: Aufbau & Steuerung -->
+        <div class="panel">
+            <h2>Versuchsaufbau (3D Raum)</h2>
+            
+            <div id="simContainer">
+                <div id="overlay-hint">Maus: Drehen / Scrollen: Zoom</div>
+            </div>
+            
+            <div class="legend">
+                <div class="legend-item"><div class="color-box" style="background: #27ae60;"></div> Bezugsachse (A)</div>
+                <div class="legend-item"><div class="color-box" style="background: #e74c3c;"></div> Tatsächliche Achse</div>
+                <div class="legend-item"><div class="color-box" style="background: #f39c12;"></div> Messsonde</div>
+            </div>
+
+            <div class="controls-container" style="margin-top: 20px;">
+                <div class="control-group">
+                    <label for="offsetSlider">Achsparallelversatz (Exzentrizität in µm): <span id="offsetVal" class="value-display">10.0</span></label>
+                    <input type="range" id="offsetSlider" min="-50" max="50" step="1" value="10">
+                </div>
+                <div class="control-group">
+                    <label for="tiltSlider">Achswinkelfehler (Kippung in µm): <span id="tiltVal" class="value-display">5.0</span></label>
+                    <input type="range" id="tiltSlider" min="-50" max="50" step="1" value="5">
+                </div>
+                
+                <div class="control-group highlight-bg" style="margin-top: 5px;">
+                    <label for="formErrorSlider" style="color: #b9770e;">Formfehler Oberfläche (Unrundheit in µm): <span id="formErrorVal" class="value-display" style="color: #d35400;">0.0</span></label>
+                    <input type="range" id="formErrorSlider" min="0" max="30" step="1" value="0" style="accent-color: #d35400;">
+                    <small style="color: #b9770e; margin-top: 4px; display: block; line-height: 1.3;">Simulation einer "Gleichdick"-Form. Beeinflusst NUR die Oberfläche in 3D, nicht die Mittelachse.</small>
+                </div>
+
+                <div style="height: 1px; background: #ddd; margin: 5px 0;"></div>
+                <div class="control-group">
+                    <label for="probePosSlider">Messposition X (Sonde verschieben): <span id="probePosVal" class="value-display">175</span></label>
+                    <input type="range" id="probePosSlider" min="10" max="340" step="5" value="175">
+                </div>
+            </div>
+        </div>
+
+        <!-- Rechte Spalte: Messergebnisse -->
+        <div class="panel" style="display: flex; flex-direction: column;">
+            <h2>Vergleich der Messergebnisse</h2>
+            
+            <div class="result-grid">
+                <div class="result-box coax">
+                    <span class="result-label" title="Bezieht sich nur auf die Achse, ignoriert Formfehler.">Koaxialität (Ø)</span>
+                    <span class="result-value" id="coaxResult">0.0 µm</span>
+                </div>
+                <div class="result-box runout">
+                    <span class="result-label" title="Messuhr-Ausschlag am aktuellen Querschnitt (TIR). Beinhaltet Formfehler.">Erw. Rundlauf (TIR)</span>
+                    <span class="result-value" id="runoutResult">0.0 µm</span>
+                </div>
+            </div>
+
+            <button id="rotateBtn" class="btn-rotate">▶ Welle drehen (Start)</button>
+            <button id="zeroBtn" class="btn-zero">⏏ Messuhr Nullen</button>
+
+            <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; margin-top: 10px; align-items: center;">
+                <canvas id="gaugeCanvas" width="200" height="200"></canvas>
+                <div style="text-align: center; font-size: 1em; font-weight: bold; margin-bottom: 10px;">
+                    Aktueller Taster-Ausschlag: <span id="gaugeValueText" style="color: var(--warning-color); font-size: 1.3em;">0.0</span> µm
+                </div>
+            </div>
+            
+            <div style="width: 100%;">
+                 <h3 style="font-size: 0.85em; margin-bottom: 5px; color: #666; text-transform: uppercase; letter-spacing: 1px;">Messschrieb (Rundlaufprofil)</h3>
+                <canvas id="graphCanvas" width="400" height="150"></canvas>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // ==========================================
+        // 1. UI & GLOBALE VARIABLEN
+        // ==========================================
+        const gaugeCanvas = document.getElementById('gaugeCanvas');
+        const gaugeCtx = gaugeCanvas.getContext('2d');
+        const graphCanvas = document.getElementById('graphCanvas');
+        const graphCtx = graphCanvas.getContext('2d');
+
+        // Controls
+        const offsetSlider = document.getElementById('offsetSlider');
+        const tiltSlider = document.getElementById('tiltSlider');
+        const formErrorSlider = document.getElementById('formErrorSlider');
+        const probePosSlider = document.getElementById('probePosSlider');
+        const rotateBtn = document.getElementById('rotateBtn');
+        const zeroBtn = document.getElementById('zeroBtn');
+        
+        // Value Displays
+        const offsetValDisplay = document.getElementById('offsetVal');
+        const tiltValDisplay = document.getElementById('tiltVal');
+        const formErrorValDisplay = document.getElementById('formErrorVal');
+        const probePosValDisplay = document.getElementById('probePosVal');
+        const coaxResultDisplay = document.getElementById('coaxResult');
+        const runoutResultDisplay = document.getElementById('runoutResult');
+        const gaugeValueText = document.getElementById('gaugeValueText');
+
+        // State & Parameter
+        let isRotating = false;
+        let rotationAngle = 0;
+        let zeroOffset = 0; 
+        const rotationSpeed = 0.04; 
+        let graphData = new Array(graphCanvas.width).fill(0);
+
+        // Geometrie-Konstanten für die 3D Welt
+        const lengthDatum = 200;
+        const lengthMeas = 350;
+        const radiusDatum = 60;
+        const radiusMeas = 40;
+        const visualMultiplier = 0.6; // Angepasst für µm-Werte, bewahrt die bisherige optische 3D-Übertreibung
+
+
+        // ==========================================
+        // 2. THREE.JS 3D SZENE SETUP
+        // ==========================================
+        const container = document.getElementById('simContainer');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xeef2f5);
+
+        // Kamera
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1, 2000);
+        camera.position.set(300, 200, 500);
+
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+
+        // OrbitControls (Maussteuerung)
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(100, 0, 0); // Schaut grob auf die Mitte des Messbereichs
+
+        // Beleuchtung
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+        dirLight.position.set(100, 300, 200);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        // --- Materialien & Texturen ---
+        // Generiere eine "gebürstetes Metall" Textur mit einer Referenzlinie
+        const texCanvas = document.createElement('canvas');
+        texCanvas.width = 512; texCanvas.height = 512;
+        const tCtx = texCanvas.getContext('2d');
+        tCtx.fillStyle = '#cfd9df'; tCtx.fillRect(0,0,512,512);
+        tCtx.fillStyle = '#b0bec5';
+        for(let i=0; i<512; i+=8) tCtx.fillRect(0, i, 512, 1); // Feine Drehrillen
+        tCtx.fillStyle = '#e74c3c'; // Rote Markierungslinie für sichtbare Rotation
+        tCtx.fillRect(0, 0, 20, 512);
+        
+        const texture = new THREE.CanvasTexture(texCanvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+
+        const metalMaterialDatum = new THREE.MeshStandardMaterial({ 
+            map: texture, metalness: 0.6, roughness: 0.4, color: 0xdddddd
+        });
+        const metalMaterialMeas = new THREE.MeshStandardMaterial({ 
+            map: texture, metalness: 0.7, roughness: 0.3, color: 0xffffff
+        });
+
+        // --- 3D Objekte & Hierarchie ---
+        
+        // 1. Haupt-Drehachse (Pivot)
+        const mainPivot = new THREE.Group();
+        scene.add(mainPivot);
+
+        // 2. Bezugswelle (A) - Statisch im Pivot
+        const geoDatum = new THREE.CylinderGeometry(radiusDatum, radiusDatum, lengthDatum, 64);
+        geoDatum.rotateZ(Math.PI / 2); // Lege Zylinder auf die X-Achse
+        geoDatum.translate(-lengthDatum / 2, 0, 0); // Nach links verschieben
+        const datumMesh = new THREE.Mesh(geoDatum, metalMaterialDatum);
+        datumMesh.receiveShadow = true;
+        datumMesh.castShadow = true;
+        mainPivot.add(datumMesh);
+
+        // 3. Gemessene Welle Pivot (Für Exzentrizität & Kippung)
+        const measPivot = new THREE.Group();
+        mainPivot.add(measPivot);
+
+        // 4. Gemessene Welle
+        const geoMeas = new THREE.CylinderGeometry(radiusMeas, radiusMeas, lengthMeas, 64, 1, false);
+        geoMeas.rotateZ(Math.PI / 2);
+        geoMeas.translate(lengthMeas / 2, 0, 0); // Nach rechts verschieben
+        const measMesh = new THREE.Mesh(geoMeas, metalMaterialMeas);
+        measMesh.receiveShadow = true;
+        measMesh.castShadow = true;
+        measPivot.add(measMesh);
+        
+        // Speichere die originalen Vertices für die Formfehler-Verformung
+        measMesh.userData.origVerts = new Float32Array(geoMeas.attributes.position.array);
+
+        // --- Achsenlinien ---
+        // depthTest: false und transparent: true sorgen für den "Röntgenblick" durch das Metall
+        const matGreen = new THREE.LineBasicMaterial({color: 0x27ae60, linewidth: 3, depthTest: false, transparent: true});
+        const matRed = new THREE.LineDashedMaterial({color: 0xe74c3c, linewidth: 2, dashSize: 10, gapSize: 5, depthTest: false, transparent: true});
+
+        // Bezugsachse (A)
+        const pointsDatumAxis = [new THREE.Vector3(-lengthDatum - 50, 0, 0), new THREE.Vector3(lengthMeas + 50, 0, 0)];
+        const axisDatum = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pointsDatumAxis), matGreen);
+        axisDatum.renderOrder = 999; // Wird immer ganz oben/zuletzt gezeichnet
+        scene.add(axisDatum); // Global statisch
+
+        // Tatsächliche Achse (im MeasPivot, bewegt sich mit)
+        const pointsMeasAxis = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(lengthMeas, 0, 0)];
+        const geoMeasAxis = new THREE.BufferGeometry().setFromPoints(pointsMeasAxis);
+        const axisMeas = new THREE.Line(geoMeasAxis, matRed);
+        axisMeas.computeLineDistances(); // Wichtig für dashed lines
+        axisMeas.renderOrder = 999; // Wird immer ganz oben/zuletzt gezeichnet
+        measPivot.add(axisMeas);
+
+        // --- Messsonde (Probe) ---
+        const probeGroup = new THREE.Group();
+        scene.add(probeGroup);
+
+        const probeMat = new THREE.MeshStandardMaterial({color: 0xf39c12, metalness: 0.8, roughness: 0.2});
+        const probeTip = new THREE.Mesh(new THREE.SphereGeometry(4, 32, 32), probeMat);
+        probeTip.castShadow = true;
+        const probeShaft = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 100), probeMat);
+        probeShaft.position.y = 50; // Verschiebe Schaft nach oben
+        probeGroup.add(probeTip);
+        probeGroup.add(probeShaft);
+        
+
+        // ==========================================
+        // 3. LOGIK & BERECHNUNG
+        // ==========================================
+
+        function update3DSceneAndMath() {
+            const offset = parseFloat(offsetSlider.value);
+            const tilt = parseFloat(tiltSlider.value);
+            const formError = parseFloat(formErrorSlider.value);
+            const probeX = parseFloat(probePosSlider.value); // Geht von 10 bis 340 (innerhalb lengthMeas=350)
+            
+            // UI Text Update
+            offsetValDisplay.textContent = offset.toFixed(1);
+            tiltValDisplay.textContent = tilt.toFixed(1);
+            formErrorValDisplay.textContent = formError.toFixed(1);
+            probePosValDisplay.textContent = probeX;
+
+            // --- 1. THEORETISCHE BERECHNUNG (UI Anzeige) ---
+            const devStart = Math.abs(offset);
+            const devEnd = Math.abs(offset + tilt);
+            const maxDev = Math.max(devStart, devEnd);
+            coaxResultDisplay.textContent = (maxDev * 2).toFixed(1) + " µm";
+
+            const relativeX = probeX / lengthMeas;
+            const axisDeviationAtProbe = Math.abs(offset + (tilt * relativeX)); 
+            const expectedRunout = (axisDeviationAtProbe * 2) + (formError * 2);
+            runoutResultDisplay.textContent = expectedRunout.toFixed(1) + " µm";
+
+            // --- 2. 3D TRANSFORMATIONEN ANWENDEN ---
+            // Exzentrizität (Verschiebung in Y)
+            measPivot.position.y = offset * visualMultiplier;
+            
+            // Kippung (Rotation um Z) - Math.atan2 gibt den exakten Winkel für die Verschiebung auf Länge
+            measPivot.rotation.z = Math.atan2(tilt * visualMultiplier, lengthMeas);
+
+            // Sondenposition X
+            probeGroup.position.x = probeX;
+
+            // --- 3. FORMFEHLER (GEOMETRIE VERFORMEN) ---
+            applyFormErrorToGeometry(formError * visualMultiplier);
+
+            // --- 4. AKTUELLE ABWEICHUNG AN DER SONDE BERECHNEN (Rückgabe für Messuhr) ---
+            const dynamicAxisDeviation = (offset + (tilt * relativeX)) * Math.cos(rotationAngle);
+            const dynamicFormError = formError * Math.cos(3 * rotationAngle); // 3-Gleichdick
+            const totalSurfaceDeviation = dynamicAxisDeviation + dynamicFormError;
+
+            // 3D Sonde physisch an die rotierende Oberfläche anpassen
+            // Basisradius + visuelle Abweichung
+            probeGroup.position.y = radiusMeas + (totalSurfaceDeviation * visualMultiplier);
+
+            return totalSurfaceDeviation;
+        }
+
+        function applyFormErrorToGeometry(formErrorVis) {
+            const positions = measMesh.geometry.attributes.position;
+            const orig = measMesh.userData.origVerts;
+
+            for (let i = 0; i < positions.count; i++) {
+                const ox = orig[i*3];
+                const oy = orig[i*3 + 1];
+                const oz = orig[i*3 + 2];
+                
+                // Radius in der Y-Z Ebene (Da der Zylinder um 90° um Z gedreht wurde, ist die Länge X)
+                const r = Math.sqrt(oy*oy + oz*oz);
+                
+                // Verforme nur die äußere Hülle (r ~ 40), nicht das innere Zentrum (falls Caps vorhanden)
+                if (r > 39) {
+                    const angle = Math.atan2(oz, oy); // Winkel um die X-Achse
+                    // 3-welliges Profil (cos(3*angle))
+                    const newR = radiusMeas + formErrorVis * Math.cos(3 * angle);
+                    
+                    positions.setY(i, newR * Math.cos(angle));
+                    positions.setZ(i, newR * Math.sin(angle));
+                }
+            }
+            positions.needsUpdate = true;
+            measMesh.geometry.computeVertexNormals(); // Wichtig für korrekte Schatten/Beleuchtung nach Verformung
+        }
+
+
+        // ==========================================
+        // 4. 2D CANVAS ZEICHNUNGEN (Messuhr & Graph)
+        // ==========================================
+        function drawGauge(currentReading) {
+            const ctx = gaugeCtx;
+            const w = gaugeCanvas.width;
+            const h = gaugeCanvas.height;
+            const centerX = w / 2;
+            const centerY = h / 2;
+            const radius = w / 2 - 5;
+
+            ctx.clearRect(0, 0, w, h);
+
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#ecf0f1';
+            ctx.fill();
+            ctx.strokeStyle = '#bdc3c7';
+            ctx.lineWidth = 6;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius * 0.9, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 14px Arial';
+
+            const maxRange = 50; // Messbereich auf +/- 50 µm angepasst
+
+            for (let i = 0; i < 60; i++) {
+                const angle = (Math.PI / 30) * i - Math.PI / 2;
+                const isMajor = i % 5 === 0;
+                const tickLen = isMajor ? 12 : 6;
+                
+                const x1 = centerX + (radius * 0.88) * Math.cos(angle);
+                const y1 = centerY + (radius * 0.88) * Math.sin(angle);
+                const x2 = centerX + (radius * 0.88 - tickLen) * Math.cos(angle);
+                const y2 = centerY + (radius * 0.88 - tickLen) * Math.sin(angle);
+
+                ctx.lineWidth = isMajor ? 2.5 : 1;
+                ctx.strokeStyle = (i === 0 || i === 30) ? '#e74c3c' : '#555'; 
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+            
+            ctx.fillText("0", centerX, centerY - radius * 0.6);
+            ctx.fillText("µm", centerX, centerY + radius * 0.4);
+
+            const clampedReading = Math.max(-maxRange, Math.min(maxRange, currentReading));
+            const needleAngle = (clampedReading / maxRange) * Math.PI;
+
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(needleAngle);
+            
+            ctx.beginPath();
+            ctx.moveTo(0, -radius * 0.8); 
+            ctx.lineTo(-4, 15); 
+            ctx.lineTo(4, 15); 
+            ctx.closePath();
+            ctx.fillStyle = '#c0392b';
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(0, 0, 7, 0, Math.PI * 2);
+            ctx.fillStyle = '#2c3e50';
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function updateGraph(newValue) {
+            graphData.shift();
+            graphData.push(newValue);
+
+            const ctx = graphCtx;
+            const w = graphCanvas.width;
+            const h = graphCanvas.height;
+            const maxDisplayRange = 50; // Skala für Graph: +/- 50 µm
+            const scaleY = (h / 2) / maxDisplayRange; 
+            const midY = h / 2;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Nulllinie
+            ctx.beginPath();
+            ctx.moveTo(0, midY);
+            ctx.lineTo(w, midY);
+            ctx.strokeStyle = '#bdc3c7';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Variablen für Begrenzungslinien
+            let minVal = graphData[0];
+            let maxVal = graphData[0];
+
+            ctx.beginPath();
+            ctx.moveTo(0, midY - graphData[0] * scaleY);
+            
+            const stepX = w / (graphData.length - 1);
+            for (let i = 1; i < graphData.length; i++) {
+                const val = graphData[i];
+                ctx.lineTo(i * stepX, midY - val * scaleY);
+                if (val < minVal) minVal = val;
+                if (val > maxVal) maxVal = val;
+            }
+            
+            ctx.strokeStyle = '#d35400'; 
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            
+            ctx.lineTo(w, midY);
+            ctx.lineTo(0, midY);
+            ctx.fillStyle = 'rgba(211, 84, 0, 0.1)';
+            ctx.fill();
+
+            // Obere und untere Begrenzungslinie zeichnen (Das Toleranzband)
+            if (maxVal > minVal && Math.abs(maxVal - minVal) > 0.1) {
+                const yMax = midY - maxVal * scaleY;
+                const yMin = midY - minVal * scaleY;
+
+                // Flächenhintergrund leicht einfärben
+                ctx.fillStyle = 'rgba(41, 128, 185, 0.05)';
+                ctx.fillRect(0, yMax, w, yMin - yMax);
+
+                // Linien
+                ctx.beginPath();
+                ctx.setLineDash([5, 5]);
+                ctx.strokeStyle = '#2980b9';
+                ctx.lineWidth = 1.5;
+                ctx.moveTo(0, yMax); ctx.lineTo(w, yMax);
+                ctx.moveTo(0, yMin); ctx.lineTo(w, yMin);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Durchmesser-Angabe für den TIR
+                const tir = maxVal - minVal;
+                ctx.fillStyle = '#2980b9';
+                ctx.font = 'bold 13px Arial';
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(`Ø ${tir.toFixed(1)} µm`, w - 10, yMax - 5);
+            }
+        }
+
+
+        // ==========================================
+        // 5. ANIMATION & EVENTS
+        // ==========================================
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (isRotating) {
+                rotationAngle += rotationSpeed;
+                // Rotiere die gesamte Haupt-Baugruppe um die X-Achse (Bezugsachse)
+                mainPivot.rotation.x = rotationAngle;
+                
+                // Berechne Messwerte und aktualisiere Sonde/UI
+                const currentReading = update3DSceneAndMath();
+                const displayReading = -(currentReading - zeroOffset); 
+                
+                gaugeValueText.textContent = displayReading.toFixed(2);
+                drawGauge(displayReading);
+                updateGraph(displayReading);
+            }
+
+            // Three.js Render Update
+            controls.update(); // Für sauberes Damping der Kamera
+            renderer.render(scene, camera);
+        }
+
+        // Event Listener: Buttons
+        rotateBtn.addEventListener('click', () => {
+            isRotating = !isRotating;
+            rotateBtn.innerHTML = isRotating ? "■ Rotation stoppen" : "▶ Welle drehen (Start)";
+            rotateBtn.classList.toggle('active', isRotating);
+        });
+
+        zeroBtn.addEventListener('click', () => {
+            // Nullpunkt anhand aktueller Position setzen
+            zeroOffset = update3DSceneAndMath(); 
+            
+            gaugeValueText.textContent = "0.0";
+            drawGauge(0);
+            graphData.fill(0);
+            updateGraph(0);
+        });
+
+        // Event Listener: Regler
+        [offsetSlider, tiltSlider, formErrorSlider, probePosSlider].forEach(el => {
+            el.addEventListener('input', () => {
+                zeroOffset = 0; // Nullung geht verloren bei Bau-Änderung
+                
+                if (!isRotating) {
+                     const currentReading = update3DSceneAndMath();
+                     const displayReading = -(currentReading - zeroOffset);
+                     drawGauge(displayReading);
+                     gaugeValueText.textContent = displayReading.toFixed(1);
+                     
+                     // Graph mit aktuellem Wert statt mit 0 füllen, verhindert falsches Aufspannen der Begrenzungslinien
+                     graphData.fill(displayReading); 
+                     updateGraph(displayReading);
+                }
+            });
+        });
+
+        // Event Listener: Fenstergröße (Responsives 3D Canvas)
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        // --- INIT ---
+        const initialReading = update3DSceneAndMath();
+        drawGauge(-initialReading);
+        gaugeValueText.textContent = (-initialReading).toFixed(1);
+        graphData.fill(-initialReading);
+        updateGraph(-initialReading); 
+        
+        // Starte Animationsschleife (rendert dauerhaft für Kamerasteuerung)
+        animate();
+
+    </script>
+</body>
+</html>
